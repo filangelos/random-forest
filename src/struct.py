@@ -60,9 +60,38 @@ class Tree:
         List of `Leaf`s
     """
 
-    def __init__(self, max_depth):
+    def __init__(self, max_depth: int):
         self.nodes = [None] + [None] * (2**(max_depth) - 1)
         self.leaves = []
+
+
+class Forest:
+    """Random Forest class.
+
+    Properties
+    ----------
+    trees: list
+        List of `Tree`s
+    probs: list
+        List of class distributions of leaves
+    """
+
+    def __init__(self, num_trees: int):
+        self._idx_tree = 0
+        self.trees = [None] * num_trees
+        self.probs = [None]
+
+    def add_tree(self, tree: Tree):
+        self.trees[self._idx_tree] = tree
+        self._idx_tree += 1
+
+    def add_probs(self, probs: np.ndarray):
+        for row in probs:
+            self.probs.append(row)
+
+    def add(self, tree: Tree, probs: np.ndarray):
+        self.add_tree(tree)
+        self.add_probs(probs)
 
 
 class SplitNodeParams(typing.NamedTuple):

@@ -23,7 +23,7 @@ def axis_aligned(data: np.ndarray) -> typing.Tuple[typing.List[bool],
     t = np.random.uniform(d_min, d_max)
     # return index of LEFT node
     idx_ = data[:, dim] < t
-    return idx_, dim, t, lambda _data, _dim, _t: _data[:, _dim] > _t
+    return idx_, dim, t, lambda _data, _dim, _t: _data[:, _dim] >= _t
 
 
 def polynomial(degree: int) -> typing.Callable[[np.ndarray],
@@ -64,5 +64,5 @@ def polynomial(degree: int) -> typing.Callable[[np.ndarray],
         return idx_, \
             dim, t, \
             lambda _data, _dim, _t: np.dot(poly.fit_transform(
-                _data)[:, 1:], _dim) > t
+                _data)[:, 1:], _dim) >= t
     return kernel

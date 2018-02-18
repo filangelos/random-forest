@@ -17,7 +17,7 @@ def getEntropy(data: np.ndarray) -> float:
         Entropy of data
     """
     labels = data[:, -1]
-    cdist = ya.util.histc(labels)[0]
+    cdist = ya.util.histc(labels)
     cdist_norm = cdist/np.sum(cdist)
     return -np.sum(cdist_norm * np.log(cdist_norm))
 

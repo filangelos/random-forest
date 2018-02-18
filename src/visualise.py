@@ -84,7 +84,7 @@ def visualise_splitfunc(idx_best,
     # data range
     r = [-1.5, 1.5]
     # split function
-    xx, yy = np.meshgrid(np.linspace(*r, 100), np.linspace(*r, 100))
+    xx, yy = np.meshgrid(np.linspace(*r, 200), np.linspace(*r, 200))
     Z = predictor(np.c_[xx.ravel(), yy.ravel()], dim, t).reshape(xx.shape)
     # decision boundary line
     axes[0].contour(xx, yy, Z, linewidths=0.8, colors='k')
@@ -141,7 +141,7 @@ def visualise_splitfunc(idx_best,
 
     # parent node
     labels = data[:, -1]
-    bars, bins = ya.util.histc_plot(labels)
+    bars, bins = ya.util.histc(labels, return_bins=True)
     axes[1].bar(bins, bars, color=[b_sns, g_sns, r_sns])
     axes[1].set_xlim([0.5, 3.5])
     axes[1].set_ylim([0, np.max(bars)*1.05])
@@ -149,10 +149,7 @@ def visualise_splitfunc(idx_best,
 
     # left child
     labels_left = data[idx_best, -1]
-    bars_left, bins_left = ya.util.histc_plot(labels_left)
-    # append zeros at end
-    while len(bars_left) < len(bins):
-        bars_left = np.append(bars_left, 0)
+    bars_left = ya.util.histc(labels_left, bins)
     axes[2].bar(bins, bars_left, color=[b_sns, g_sns, r_sns])
     axes[2].set_xlim([0.5, 3.5])
     axes[2].set_ylim([0, np.max(bars)*1.05])
@@ -162,10 +159,7 @@ def visualise_splitfunc(idx_best,
 
     # right child
     labels_right = data[~idx_best, -1]
-    bars_right, bins_right = ya.util.histc_plot(labels_right)
-    # append zeros at end
-    while len(bars_right) < len(bins):
-        bars_right = np.append(bars_right, 0)
+    bars_right = ya.util.histc(labels_right, bins)
     axes[3].bar(bins, bars_right, color=[b_sns, g_sns, r_sns])
     axes[3].set_xlim([0.5, 3.5])
     axes[3].set_ylim([0, np.max(bars)*1.05])

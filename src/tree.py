@@ -5,6 +5,7 @@ import src as ya
 from src.struct import Node
 from src.struct import Leaf
 from src.struct import Tree
+from src.struct import Forest
 from src.struct import SplitNodeParams
 from src.struct import TreeParams
 from src.struct import ForestParams
@@ -82,20 +83,24 @@ def growTree(data: np.ndarray,
                                                node=tree.nodes[n],
                                                params=SplitNodeParams(*params[2:]))
     cnt = 1
+    probs = []
+    bins = np.unique(data[:, -1])
     for n in range(1, 2**params.max_depth):
         if len(tree.nodes[n].idx) != 0:
             __idx = tree.nodes[n].idx
-            __hist = ya.util.histc(data[__idx, -1])[0]
-            tree.nodes[n].prob = __hist / len(__idx)
+            __hist = ya.util.histc(data[__idx, -1], bins)
+            __prob = __hist / np.sum(__hist)
+            tree.nodes[n].prob = __prob
 
             if tree.nodes[n].dim == -1:  # leaf node
                 tree.nodes[n].leaf_idx = cnt
-                __prob = __hist / np.sum(__hist)
                 tree.leaves.append(Leaf(__prob, cnt_total))
+
+                probs.append(__prob)
 
                 cnt += 1
                 cnt_total += 1
-    return tree, cnt_total
+    return tree, cnt_total, probs
 
 
 def growForest(data: np.ndarray, params: ForestParams):
@@ -103,10 +108,10 @@ def growForest(data: np.ndarray, params: ForestParams):
     N, D = data.shape
     frac = 1 - 1/np.exp(1)
     cnt_total = 1
-    forest = []
+    forest = Forest(params.num_trees)
     for T in range(params.num_trees):
         idx = np.random.choice(range(N), int(N*frac), True)
-        tree, cnt_total = growTree(
+        tree, cnt_total, probs = growTree(
             data, idx, cnt_total, TreeParams(*params[1:]))
-        forest.append(tree)
+        forest.add(tree, probs)
     return forest
