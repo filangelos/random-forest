@@ -62,7 +62,7 @@ class Tree:
 
     def __init__(self, max_depth: int):
         self.nodes = [None] + [None] * (2**(max_depth) - 1)
-        self.leaves = []
+        self.leaves = [None]
 
 
 class Forest:
@@ -92,6 +92,55 @@ class Forest:
     def add(self, tree: Tree, probs: np.ndarray):
         self.add_tree(tree)
         self.add_probs(probs)
+
+    def cdist(self, data: np.ndarray) -> typing.List[int]:
+        y_hat = []
+        for m in range(data.shape[0]):
+            labels = np.empty(len(self.trees), dtype=int)
+            for T in range(len(self.trees)):
+                idx = 1
+                while self.trees[T].nodes[idx].dim != -1:
+                    t = self.trees[T].nodes[idx].t
+                    dim = self.trees[T].nodes[idx].dim
+                    # Decision
+                    if data[m, dim] < t:
+                        idx = idx*2  # left child node
+                    else:
+                        idx = idx*2 + 1  # right child node
+
+                leaf_idx = self.trees[T].nodes[idx].leaf_idx
+
+                if self.trees[T].leaves[leaf_idx] is not None:
+                    labels[T] = self.trees[T].leaves[leaf_idx].label
+
+            p_rf = np.array(self.probs)[labels]
+            p_rf_sum = np.sum(p_rf) / len(self.trees)
+            y_hat.append((p_rf, p_rf_sum))
+        return y_hat
+
+
+"""
+function label = testTrees(data,tree)
+% Slow version - pass data point one-by-one
+
+cc = [];
+for T = 1:length(tree)
+    for m = 1:size(data,1);
+        idx = 1;
+
+        leaf_idx = tree(T).node(idx).leaf_idx;
+        
+        if ~isempty(tree(T).leaf(leaf_idx))
+            p(m,:,T) = tree(T).leaf(leaf_idx).prob;
+            label(m,T) = tree(T).leaf(leaf_idx).label;
+        end
+    end
+end
+
+end
+
+
+"""
 
 
 class SplitNodeParams(typing.NamedTuple):
