@@ -119,30 +119,6 @@ class Forest:
         return y_hat
 
 
-"""
-function label = testTrees(data,tree)
-% Slow version - pass data point one-by-one
-
-cc = [];
-for T = 1:length(tree)
-    for m = 1:size(data,1);
-        idx = 1;
-
-        leaf_idx = tree(T).node(idx).leaf_idx;
-        
-        if ~isempty(tree(T).leaf(leaf_idx))
-            p(m,:,T) = tree(T).leaf(leaf_idx).prob;
-            label(m,T) = tree(T).leaf(leaf_idx).label;
-        end
-    end
-end
-
-end
-
-
-"""
-
-
 class SplitNodeParams(typing.NamedTuple):
     """Hyperparameters for `splitNode` method.
 

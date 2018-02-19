@@ -64,5 +64,5 @@ def polynomial(degree: int) -> typing.Callable[[np.ndarray],
         return idx_, \
             dim, t, \
             lambda _data, _dim, _t: np.dot(poly.fit_transform(
-                _data)[:, 1:], _dim) >= t
+                _data)[:, 1:], _dim) >= _t
     return kernel
