@@ -109,6 +109,7 @@ def growForest(data: np.ndarray, params: ForestParams):
     frac = 1 - 1/np.exp(1)
     cnt_total = 1
     forest = Forest(params.num_trees)
+    forest._labels = np.unique(data[:, -1])
     for T in range(params.num_trees):
         idx = np.random.choice(range(N), int(N*frac), True)
         tree, cnt_total, probs = growTree(

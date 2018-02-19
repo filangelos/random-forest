@@ -80,6 +80,7 @@ class Forest:
         self._idx_tree = 0
         self.trees = [None] * num_trees
         self.probs = [None]
+        self._labels = None
 
     def add_tree(self, tree: Tree):
         self.trees[self._idx_tree] = tree
@@ -93,7 +94,8 @@ class Forest:
         self.add_tree(tree)
         self.add_probs(probs)
 
-    def cdist(self, data: np.ndarray) -> typing.List[int]:
+    def cdist(self, data: np.ndarray) -> typing.List[
+            typing.Tuple[typing.List[np.ndarray], np.ndarray]]:
         y_hat = []
         for m in range(data.shape[0]):
             labels = np.empty(len(self.trees), dtype=int)
@@ -117,6 +119,11 @@ class Forest:
             p_rf_sum = np.sum(p_rf) / len(self.trees)
             y_hat.append((p_rf, p_rf_sum))
         return y_hat
+
+    def predict(self, data: np.ndarray) -> np.ndarray:
+        label_idx = np.argmax(list(zip(*self.cdist(data)))[-1], axis=1)
+        labels_map = map(lambda i: self._labels[i], label_idx)
+        return np.array(list(labels_map), dtype=int)
 
 
 class SplitNodeParams(typing.NamedTuple):
