@@ -63,6 +63,7 @@ for j, numSplit in enumerate(numSplits):
 
 # table to be used for report
 print('\n', IGS.to_latex(), '\n')
+IGS.to_csv('assets/1.2/information_gain_vs_weak_learners.csv')
 
 # we could also generate a qualitative comparison with a matrix
 # of decision boundaries and IGs

@@ -18,3 +18,13 @@ def histc(labels: np.ndarray,
         return bincount[bins], bins
     else:
         return bincount[bins]
+
+
+def base_converter(number: int, base: int) -> typing.List[int]:
+    """Convert `number` from decimal to `base` representation."""
+    def _conv(_number: int, _acc: typing.List[int] = []) -> typing.List[int]:
+        if _number < base:
+            return [_number] + _acc
+        else:
+            return _conv(_number//base, [_number % base] + _acc)
+    return _conv(number)

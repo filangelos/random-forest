@@ -6,7 +6,7 @@ import seaborn as sns
 import src as ya
 
 # prettify plots
-plt.rcParams['figure.figsize'] = [5.0, 5.0]
+plt.rcParams['figure.figsize'] = [3.0, 3.0]
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
@@ -19,7 +19,8 @@ def plot_toydata(data: np.ndarray,
                  alpha: float = 1.0,
                  new_figure: bool = False,
                  show: bool = False,
-                 savefig_path: str = None) -> None:
+                 savefig_path: str = None,
+                 ax=None) -> None:
     """Plot `getData('Toy_Spiral')` data.
 
     Parameters
