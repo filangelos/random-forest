@@ -133,5 +133,5 @@ venv.bak/
 
 # experimental scripts
 playground
-assets
-tmp
+assets/*
+tmp/*
