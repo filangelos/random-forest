@@ -6,3 +6,5 @@ matplotlib
 seaborn
 ipython
 graphviz
+opencv-python
+opencv-contrib-python

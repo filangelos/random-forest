@@ -3,16 +3,14 @@ import sys
 sys.path.append('.')
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import typing
-import time
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 
 import src as ya
+from src.struct import ForestParams
 
 # prettify plots
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
@@ -79,7 +77,7 @@ for i in range(len(test_points)):
     for j, ax in enumerate(axes[i].flatten()):
         if j < forest.n_estimators:
             dist = distributions[i, j]
-            title = 'Test Point %i - Tree %i' % (i+1, j)
+            title = 'Test Point %i - Tree %i' % (i+1, j+1)
         else:
             dist = averaged_distributions[i]
             title = 'Test Point %i - Averaged' % (i+1)
@@ -91,7 +89,7 @@ for i in range(len(test_points)):
         ax.set_xticks(bins)
 
 plt.tight_layout()
-fig.savefig('assets/2.1/eval_test_points.pdf', format='pdf', dpi=300,
+fig.savefig('assets/2/eval_test_points.pdf', format='pdf', dpi=300,
             transparent=True, bbox_inches='tight', pad_inches=0.01)
 
 ###########################################################################
@@ -147,5 +145,45 @@ for param in grid_params.keys():
         # plot toy data
         ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
             map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
-        fig.savefig('assets/2.1/%s.pdf' % param, format='pdf', dpi=300,
+        fig.savefig('assets/2/%s.pdf' % param, format='pdf', dpi=300,
                     transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+###########################################################################
+# Weak Learner - Visualization
+###########################################################################
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6.0, 6.0))
+for weak_learner, ax in zip(['axis-aligned', 'linear', 'quadratic', 'cubic'],
+                            axes.flatten()):
+    forest = ya.tree.growForest(data_train,
+                                ForestParams(num_trees=best_params_[
+                                    'n_estimators'],
+                                    max_depth=best_params_[
+                                    'max_depth'],
+                                    criterion='IG',
+                                    num_splits=5,
+                                    weak_learner=weak_learner,
+                                    min_samples_split=best_params_[
+                                        'min_samples_split']))
+
+    print('yo')
+
+    Z = forest.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+    # decision boundary line
+    ax.contour(xx, yy, Z, linewidths=0.8, colors='k')
+    # decision surfaces
+    ax.contourf(xx,
+                yy,
+                Z,
+                cmap=plt.cm.jet.from_list(
+                    'contourf', [b_sns, g_sns, r_sns], 3),
+                alpha=0.4)
+    ax.set_title('%s=%s' % ('weak_learner', weak_learner))
+    # color map
+    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
+    # plot toy data
+    ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
+        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+fig.savefig('assets/2/weak_learner.pdf', format='pdf', dpi=300,
+            transparent=True, bbox_inches='tight', pad_inches=0.01)

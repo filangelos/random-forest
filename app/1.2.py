@@ -4,9 +4,6 @@ sys.path.append('.')
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import typing
-import time
 
 import src as ya
 from src.struct import SplitNodeParams
@@ -58,7 +55,8 @@ for j, numSplit in enumerate(numSplits):
         np.random.seed(0)
         # get information gain
         _, _, _, ig = ya.tree.splitNode(data_train,
-                                        root, SplitNodeParams(numSplit, kernel))
+                                        root,
+                                        SplitNodeParams(numSplit, kernel))
         IGS.loc[numSplit, kernel] = ig
 
 # table to be used for report

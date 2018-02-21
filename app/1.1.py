@@ -3,7 +3,6 @@ import sys
 sys.path.append('.')
 
 import numpy as np
-import matplotlib.pyplot as plt
 import typing
 
 import src as ya

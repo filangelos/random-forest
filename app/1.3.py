@@ -3,7 +3,6 @@ import sys
 sys.path.append('.')
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -33,7 +32,8 @@ X_train, y_train = data_train[:, :-1], data_train[:, -1]
 clf = tree.DecisionTreeClassifier(criterion='entropy',
                                   max_depth=5,
                                   min_samples_split=5,
-                                  min_impurity_decrease=0.05).fit(X_train, y_train)
+                                  min_impurity_decrease=0.05
+                                  ).fit(X_train, y_train)
 
 ###########################################################################
 # Grow a Tree - Visualize Leaf Distributions

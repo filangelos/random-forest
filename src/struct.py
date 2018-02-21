@@ -101,7 +101,8 @@ class Forest:
             labels = np.empty(len(self.trees), dtype=int)
             for T in range(len(self.trees)):
                 idx = 1
-                while self.trees[T].nodes[idx].dim != -1:
+                while not isinstance(self.trees[T].nodes[idx].dim, int) or \
+                        self.trees[T].nodes[idx].dim != -1:
                     t = self.trees[T].nodes[idx].t
                     dim = self.trees[T].nodes[idx].dim
                     # Decision

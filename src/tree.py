@@ -57,8 +57,12 @@ def splitNode(data: np.ndarray,
             node, ig_best, idx_best = ya.information.updateInformationGain(
                 node, ig_best, ig, t, idx_, dim, idx_best)
 
-    nodeL.idx = idx[idx_best]
-    nodeR.idx = idx[~idx_best]
+    if len(idx_best) == 0:
+        nodeL.idx = []
+        nodeR.idx = idx
+    else:
+        nodeL.idx = idx[idx_best]
+        nodeR.idx = idx[~idx_best]
     if visualise or savefig_path is not None:
         ya.visualise.visualise_splitfunc(
             idx_best, data, node.dim, node.t, ig_best, -1, predictor,
@@ -92,7 +96,7 @@ def growTree(data: np.ndarray,
             __prob = __hist / np.sum(__hist)
             tree.nodes[n].prob = __prob
 
-            if tree.nodes[n].dim == -1:  # leaf node
+            if isinstance(tree.nodes[n].dim, int) and tree.nodes[n].dim == -1:  # leaf node
                 tree.nodes[n].leaf_idx = cnt
                 tree.leaves.append(Leaf(__prob, cnt_total))
 
