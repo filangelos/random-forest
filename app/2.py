@@ -64,7 +64,7 @@ averaged_distributions = forest.predict_proba(test_points)
 
 # matplotlib figure
 nrows = len(test_points)
-ncols = forest.n_estimators + 1
+ncols = forest.n_estimators + 2
 plt.rcParams['figure.figsize'] = [3.0 * ncols, 3.0 * nrows]
 fig, axes = plt.subplots(nrows=nrows, ncols=ncols)
 
@@ -73,8 +73,13 @@ bins = np.unique(y_train).astype(int)
 # maximum y-axis value
 ymax = np.max(distributions)
 
+# data range
+r = [-1.5, 1.5]
+# split function grid
+xx, yy = np.meshgrid(np.linspace(*r, 200), np.linspace(*r, 200))
+
 for i in range(len(test_points)):
-    for j, ax in enumerate(axes[i].flatten()):
+    for j, ax in enumerate(axes[i][:-1].flatten()):
         if j < forest.n_estimators:
             dist = distributions[i, j]
             title = 'Test Point %i - Tree %i' % (i+1, j+1)
@@ -87,6 +92,33 @@ for i in range(len(test_points)):
         ax.set_xlim([0.5, 3.5])
         ax.set_ylim([0, ymax*105])
         ax.set_xticks(bins)
+    # color map
+    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
+    # plot toy data
+    axes[i][-1].scatter(data_train[:, 0], data_train[:, 1], c=list(
+        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+    # test points
+    axes[i][-1].scatter(test_points[i, 0], test_points[i, 1], c=list(
+        map(lambda l: cmap[l], forest.predict([test_points[i]])),
+    ), edgecolors='k')
+    # axis limits
+    axes[i][-1].set_xlim(r)
+    axes[i][-1].set_ylim(r)
+    # title
+    axes[i][-1].set_title('Evaluating Test Point %i' % (i+1))
+    # # grid predictions
+    # Z = forest.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+    # # decision boundary line
+    # axes[i][-1].contour(xx, yy, Z, linewidths=0.8, colors='k')
+    # # decision surfaces
+    # axes[i][-1].contourf(xx,
+    #                      yy,
+    #                      Z,
+    #                      cmap=plt.cm.jet.from_list(
+    #                          'contourf', [b_sns, g_sns, r_sns], 3),
+    #                      alpha=0.4)
+
 
 plt.tight_layout()
 fig.savefig('assets/2/eval_test_points.pdf', format='pdf', dpi=300,
@@ -95,11 +127,6 @@ fig.savefig('assets/2/eval_test_points.pdf', format='pdf', dpi=300,
 ###########################################################################
 # Validation of Hyperparameters
 ###########################################################################
-
-# data range
-r = [-1.5, 1.5]
-# split function
-xx, yy = np.meshgrid(np.linspace(*r, 200), np.linspace(*r, 200))
 
 grid_params = {'n_estimators': [1, 5, 10, 20],
                'max_depth': [2, 5, 7, 11],
@@ -145,6 +172,11 @@ for param in grid_params.keys():
         # plot toy data
         ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
             map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+        # plot test points
+        ax.scatter(test_points[:, 0], test_points[:, 1], c=list(
+            map(lambda l: cmap[l], clf.predict(test_points)),
+        ), edgecolors='k')
+
         fig.savefig('assets/2/%s.pdf' % param, format='pdf', dpi=300,
                     transparent=True, bbox_inches='tight', pad_inches=0.01)
 
@@ -152,38 +184,38 @@ for param in grid_params.keys():
 # Weak Learner - Visualization
 ###########################################################################
 
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6.0, 6.0))
-for weak_learner, ax in zip(['axis-aligned', 'linear', 'quadratic', 'cubic'],
-                            axes.flatten()):
-    forest = ya.tree.growForest(data_train,
-                                ForestParams(num_trees=best_params_[
-                                    'n_estimators'],
-                                    max_depth=best_params_[
-                                    'max_depth'],
-                                    criterion='IG',
-                                    num_splits=5,
-                                    weak_learner=weak_learner,
-                                    min_samples_split=best_params_[
-                                        'min_samples_split']))
+# fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6.0, 6.0))
+# for weak_learner, ax in zip(['axis-aligned', 'linear', 'quadratic', 'cubic'],
+#                             axes.flatten()):
+#     forest = ya.tree.growForest(data_train,
+#                                 ForestParams(num_trees=best_params_[
+#                                     'n_estimators'],
+#                                     max_depth=best_params_[
+#                                     'max_depth'],
+#                                     criterion='IG',
+#                                     num_splits=5,
+#                                     weak_learner=weak_learner,
+#                                     min_samples_split=best_params_[
+#                                         'min_samples_split']))
 
-    print('yo')
+#     print('yo')
 
-    Z = forest.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+#     Z = forest.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
 
-    # decision boundary line
-    ax.contour(xx, yy, Z, linewidths=0.8, colors='k')
-    # decision surfaces
-    ax.contourf(xx,
-                yy,
-                Z,
-                cmap=plt.cm.jet.from_list(
-                    'contourf', [b_sns, g_sns, r_sns], 3),
-                alpha=0.4)
-    ax.set_title('%s=%s' % ('weak_learner', weak_learner))
-    # color map
-    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
-    # plot toy data
-    ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
-        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
-fig.savefig('assets/2/weak_learner.pdf', format='pdf', dpi=300,
-            transparent=True, bbox_inches='tight', pad_inches=0.01)
+#     # decision boundary line
+#     ax.contour(xx, yy, Z, linewidths=0.8, colors='k')
+#     # decision surfaces
+#     ax.contourf(xx,
+#                 yy,
+#                 Z,
+#                 cmap=plt.cm.jet.from_list(
+#                     'contourf', [b_sns, g_sns, r_sns], 3),
+#                 alpha=0.4)
+#     ax.set_title('%s=%s' % ('weak_learner', weak_learner))
+#     # color map
+#     cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
+#     # plot toy data
+#     ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
+#         map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+# fig.savefig('assets/2/weak_learner.pdf', format='pdf', dpi=300,
+#             transparent=True, bbox_inches='tight', pad_inches=0.01)

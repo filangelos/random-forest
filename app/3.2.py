@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import typing
 import time
+import pickle
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
@@ -29,10 +30,69 @@ data_train, data_query = ya.data.getCaltech(
 X_train, y_train = data_train[:, :-1], data_train[:, -1]
 X_test, y_test = data_query[:, :-1], data_query[:, -1]
 
-clf = RandomForestClassifier(
-    n_estimators=50, max_depth=10).fit(X_train, y_train)
+###########################################################################
+# Validation of Hyperparameters
+###########################################################################
+
+grid_params = {'n_estimators': [10, 20, 50, 100, 250, 500, 1000],
+               'max_depth': [2, 5, 7, 11],
+               'min_samples_split': [5, 10, 20, 50],
+               'min_impurity_decrease': [0.00, 0.01, 0.02, 0.05, 0.1]
+               }
+
+try:
+    # fetch GridSearchCV object from `tmp` folder
+    search = pickle.load(open('tmp/3.2_search', 'rb'))
+except Exception:
+    # Cross-Validation Container
+    # WARNING: execution time ~50 minutes
+    search = GridSearchCV(RandomForestClassifier(),
+                          param_grid=grid_params, cv=10).fit(X_train, y_train)
+    # cache GridSearchCV object to `tmp` folder
+    pickle.dump(search, open('tmp/3.2_search', 'wb'))
+
+# Best Parameters
+best_params_ = search.best_params_
+print(best_params_)
+
+# Best Estimator
+clf = search.best_estimator_
 
 print(clf.score(X_test, y_test))
 
-sns.heatmap(confusion_matrix(y_test, clf.predict(X_test)))
-plt.show()
+# sns.heatmap(confusion_matrix(y_test, clf.predict(X_test)))
+# plt.show()
+
+###########################################################################
+# Visualization of Hyperparameters Effect
+###########################################################################
+
+for param in grid_params.keys():
+    kwargs = {}
+    for key in grid_params.keys():
+        if key != param:
+            kwargs[key] = best_params_[key]
+    cv_mean_error, cv_std_error = [], []
+    for cv_param in grid_params[param]:
+        kwargs[param] = cv_param
+        index = search.cv_results_['params'].index(kwargs)
+        cv_mean_error.append(1-search.cv_results_['mean_test_score'][index])
+        cv_std_error.append(search.cv_results_['std_test_score'][index])
+    cv_mean_error = np.array(cv_mean_error)
+    cv_std_error = np.array(cv_std_error)
+    plt.figure()
+    plt.plot(grid_params[param], cv_mean_error, color=r_sns)
+    plt.fill_between(grid_params[param],
+                     cv_mean_error - 0.2*cv_std_error,
+                     cv_mean_error + 0.2*cv_std_error,
+                     color=b_sns, alpha=0.4)
+    plt.vlines(grid_params[param][np.argmin(cv_mean_error)],
+               (cv_mean_error - 0.2*cv_std_error).min()*0.95,
+               (cv_mean_error + 0.2*cv_std_error).max()*1.05,
+               'k', linestyles='dashdot')
+    plt.xlabel(param)
+    plt.ylabel('Cross Validation Error')
+
+    plt.tight_layout()
+    plt.savefig('assets/3.2/%s.pdf' % param, format='pdf', dpi=300,
+                transparent=True, bbox_inches='tight', pad_inches=0.01)
