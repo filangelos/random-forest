@@ -64,7 +64,7 @@ print(clf.score(X_test, y_test))
 # plt.show()
 
 ###########################################################################
-# Visualization of Hyperparameters Effect
+# Visualization of Hyperparameters Effect on CROSS-VALIDATION ERROR
 ###########################################################################
 
 for param in grid_params.keys():
@@ -94,5 +94,45 @@ for param in grid_params.keys():
     plt.ylabel('Cross Validation Error')
 
     plt.tight_layout()
-    plt.savefig('assets/3.2/%s.pdf' % param, format='pdf', dpi=300,
+    plt.savefig('assets/3.2/error/%s.pdf' % param, format='pdf', dpi=300,
+                transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+###########################################################################
+# Visualization of Hyperparameters Effect on FIT/PREDICT COMPLEXITY
+###########################################################################
+
+for param in grid_params.keys():
+    kwargs = {}
+    for key in grid_params.keys():
+        if key != param:
+            kwargs[key] = best_params_[key]
+    cv_mean_fit_time, cv_std_fit_time = [], []
+    cv_mean_score_time, cv_std_score_time = [], []
+    for cv_param in grid_params[param]:
+        kwargs[param] = cv_param
+        index = search.cv_results_['params'].index(kwargs)
+        # training
+        cv_mean_fit_time.append(search.cv_results_['mean_fit_time'][index])
+        cv_std_fit_time.append(search.cv_results_['std_fit_time'][index])
+        # testing
+        cv_mean_score_time.append(search.cv_results_['mean_score_time'][index])
+        cv_std_score_time.append(search.cv_results_['std_score_time'][index])
+    # training
+    cv_mean_fit_time = np.array(cv_mean_fit_time)
+    cv_std_fit_time = np.array(cv_std_fit_time)
+    plt.figure()
+    plt.semilogy(grid_params[param], cv_mean_fit_time,
+                 color=b_sns, label='Training')
+    plt.semilogy(grid_params[param], cv_mean_score_time,
+                 color=r_sns, label='Testing')
+    # plt.fill_between(grid_params[param],
+    #                  cv_mean_fit_time - cv_std_fit_time,
+    #                  cv_mean_fit_time + cv_std_fit_time,
+    #                  color=b_sns, alpha=0.4)
+    plt.xlabel(param)
+    plt.ylabel('Execution Time')
+    plt.title('Time Complexity')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('assets/3.2/complexity/%s.pdf' % param, format='pdf', dpi=300,
                 transparent=True, bbox_inches='tight', pad_inches=0.01)
