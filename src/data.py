@@ -1,10 +1,13 @@
 import os
 import glob
-import cv2
-import numpy as np
 import pickle
 
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
 from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
 
 import src as ya
 from src.struct import Data
@@ -13,7 +16,7 @@ from collections import defaultdict
 
 
 def getData(mode: str = 'Toy_Spiral',
-            show_image: bool = True,
+            show_raw_images: bool = True,
             num_descriptors: int = 1e5,
             num_training_samples_per_class: int = 30,
             num_testing_samples_per_class: int = 10) -> Data:
@@ -24,7 +27,7 @@ def getData(mode: str = 'Toy_Spiral',
     mode: str
         1. Toy_Spiral
         2. Caltech
-    show_image: bool
+    show_raw_images: bool
         Show training & testing images and their
         image feature vector (histogram representation)
     num_descriptors: int
@@ -88,12 +91,13 @@ def getSpiral() -> Data:
     return Data(data_train, data_query)
 
 
-def getCaltech(codebook: str = 'knn',
-               show_image: bool = True,
+def getCaltech(codebook: str = 'kmeans',
+               savefig_images: bool = False,
+               savefig_bars: bool = False,
                num_features: int = 256,
-               num_descriptors: int = int(1e5),
-               num_training_samples_per_class: int = 25,
-               num_testing_samples_per_class: int = 5,
+               num_descriptors: int = 100000,
+               num_training_samples_per_class: int = 15,
+               num_testing_samples_per_class: int = 15,
                random_state: int = None,
                pickle_dump: bool = True,
                pickle_load: bool = False) -> Data:
@@ -103,9 +107,9 @@ def getCaltech(codebook: str = 'knn',
     ----------
     codebook: str
         Codebook construction algorithm
-    show_image: bool
-        Show training & testing images and their
-        image feature vector (histogram representation)
+    savefig_images: bool
+        Save raw training & testing images and their
+        SIFT masked grayscale transforms
     num_features: int
         Number of BoW features
     num_descriptors: int
@@ -123,6 +127,7 @@ def getCaltech(codebook: str = 'knn',
         * data_train: numpy.ndarray
         * data_query: numpy.ndarray
     """
+    num_descriptors = int(num_descriptors)
     if pickle_load:
         try:
             return pickle.load(
@@ -145,7 +150,10 @@ def getCaltech(codebook: str = 'knn',
     sift = cv2.xfeatures2d.SIFT_create()
     # list of descriptors
     descriptors_train = []
-    raw = defaultdict(dict)
+    raw_train = defaultdict(dict)
+    # plot train raw & SIFT images
+    if savefig_images:
+        images_train = []
     # iterate over image classes
     for c in range(len(class_list)):
         # subfolder pointer
@@ -159,31 +167,61 @@ def getCaltech(codebook: str = 'knn',
         # iterate over image samples of a class
         for i in range(len(img_train)):
             # fetch image sample
-            img = cv2.imread(img_train[i])
+            raw_img = cv2.imread(img_train[i])
+            img = raw_img.copy()
             # convert to gray scale for SIFT compatibility
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # apply SIFT algorithm
-            _, des = sift.detectAndCompute(gray, None)
+            kp, des = sift.detectAndCompute(gray, None)
             # store descriptors
-            raw[c][i] = des
+            raw_train[c][i] = des
             for d in des:
                 descriptors_train.append(d)
+            # images to plot
+            if savefig_images and i == 0:
+                sift_img = cv2.drawKeypoints(
+                    gray, kp, img,
+                    flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                images_train.append((raw_img, sift_img))
+    # plot raw & SIFT images
+    if savefig_images:
+        for c in range(len(class_list)):
+            fig, axes = plt.subplots(ncols=2, figsize=(6.0, 3.0))
+            axes[0].imshow(images_train[c][0], interpolation='nearest')
+            axes[0].set_axis_off()
+            axes[0].set_title('Training Sample\n%s: Original' %
+                              (class_list[c].capitalize()))
+            axes[1].imshow(images_train[c][1], interpolation='nearest')
+            axes[1].set_axis_off()
+            axes[1].set_title('Training Sample\n%s: SIFT' %
+                              (class_list[c].capitalize()))
+            plt.tight_layout()
+            fig.savefig('assets/3.1/examples/train/%s.pdf' % class_list[c], format='pdf', dpi=300,
+                        transparent=True, bbox_inches='tight', pad_inches=0.01)
     # NumPy-friendly array of descriptors
     descriptors_train = np.asarray(descriptors_train)
     # random selection of descriptors WITHOUT REPLACEMENT
     descriptors_random = descriptors_train[np.random.choice(
-        len(descriptors_train), num_descriptors, replace=False)]
+        len(descriptors_train), min(len(descriptors_train), num_descriptors),
+        replace=False)]
     # K-Means clustering algorithm
-    transformer = KMeans(n_clusters=num_features,
-                         init='k-means++').fit(descriptors_random)
-    # vector quantisation
+    if codebook == 'kmeans':
+        codebook_algorithm = KMeans(n_clusters=num_features,
+                                    init='k-means++').fit(descriptors_random)
+    elif codebook == 'minibatch-kmeans':
+        codebook_algorithm = MiniBatchKMeans(n_clusters=num_features,
+                                             init='k-means++',
+                                             batch_size=num_descriptors//100
+                                             ).fit(descriptors_random)
+
+        # vector quantisation
     data_train = np.zeros(
         (len(class_list)*num_training_samples_per_class, num_features+1))
 
     for i in range(len(class_list)):
         for j in range(num_training_samples_per_class):
             # determine centers distribution
-            idx = transformer.predict(raw[i][j])
+            idx = codebook_algorithm.predict(raw_train[i][j])
             # set features
             data_train[num_training_samples_per_class *
                        (i)+j, :-1] = ya.util.histc(
@@ -192,6 +230,9 @@ def getCaltech(codebook: str = 'knn',
             data_train[num_training_samples_per_class*(i)+j, -1] = i
     # TESTING
     raw_test = defaultdict(dict)
+    # plot train raw & SIFT images
+    if savefig_images:
+        images_test = []
     # iterate over image classes
     for c in range(len(class_list)):
         # subfolder pointer
@@ -205,13 +246,35 @@ def getCaltech(codebook: str = 'knn',
         # iterate over image samples of a class
         for i in range(len(img_test)):
             # fetch image sample
-            img = cv2.imread(img_test[i])
+            raw_img = cv2.imread(img_test[i])
+            img = raw_img.copy()
             # convert to gray scale for SIFT compatibility
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # apply SIFT algorithm
-            _, des = sift.detectAndCompute(gray, None)
+            kp, des = sift.detectAndCompute(gray, None)
             # store descriptors
             raw_test[c][i] = des
+            # images to plot
+            if savefig_images and i == 0:
+                sift_img = cv2.drawKeypoints(
+                    gray, kp, img,
+                    flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                images_test.append((raw_img, sift_img))
+    # plot raw & SIFT images
+    if savefig_images:
+        for c in range(len(class_list)):
+            fig, axes = plt.subplots(ncols=2, figsize=(6.0, 3.0))
+            axes[0].imshow(images_test[c][0], interpolation='nearest')
+            axes[0].set_axis_off()
+            axes[0].set_title('Testing Sample\n%s: Original' %
+                              (class_list[c].capitalize()))
+            axes[1].imshow(images_test[c][1], interpolation='nearest')
+            axes[1].set_axis_off()
+            axes[1].set_title('Testing Sample\n%s: SIFT' %
+                              (class_list[c].capitalize()))
+            plt.tight_layout()
+            fig.savefig('assets/3.1/examples/test/%s.pdf' % class_list[c], format='pdf', dpi=300,
+                        transparent=True, bbox_inches='tight', pad_inches=0.01)
     # vector quantisation
     data_query = np.zeros(
         (len(class_list)*num_testing_samples_per_class, num_features+1))
@@ -219,7 +282,7 @@ def getCaltech(codebook: str = 'knn',
     for i in range(len(class_list)):
         for j in range(num_testing_samples_per_class):
             # determine centers distribution
-            idx = transformer.predict(raw_test[i][j])
+            idx = codebook_algorithm.predict(raw_test[i][j])
             # set features
             data_query[num_testing_samples_per_class *
                        (i)+j, :-1] = ya.util.histc(
