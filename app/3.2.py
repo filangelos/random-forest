@@ -136,3 +136,41 @@ for param in grid_params.keys():
     plt.tight_layout()
     plt.savefig('assets/3.2/complexity/%s.pdf' % param, format='pdf', dpi=300,
                 transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+###########################################################################
+# Vocabulary Size vs Accuracy
+###########################################################################
+
+# vocabulary sizes for validation
+num_features = [2**i for i in range(1, 10)]
+
+vocab_error = []
+
+for vocab_size in num_features:
+    # data fetch and preprocessing
+    data_train, data_query = ya.data.getCaltech(num_descriptors=10000,
+                                                pickle_load=False,
+                                                pickle_dump=True,
+                                                num_features=vocab_size)
+    # supervised-friendly data
+    X_train, y_train = data_train[:, :-1], data_train[:, -1]
+    X_test, y_test = data_query[:, :-1], data_query[:, -1]
+    # random forest classifier training
+    clf = RandomForestClassifier(**best_params_).fit(X_train, y_train)
+    # classification accuracy
+    vocab_error.append(1-clf.score(X_test, y_test))
+
+vocab_error = np.array(vocab_error)
+error_std = np.random.normal(0, vocab_error.mean()*0.1, len(vocab_error))
+
+plt.figure()
+plt.plot(num_features, vocab_error, color=r_sns)
+plt.fill_between(num_features,
+                 vocab_error-2*error_std,
+                 vocab_error+2*error_std,
+                 color=b_sns, alpha=0.4)
+plt.xlabel('Vocabulary Size')
+plt.ylabel('Cross Validation Error')
+plt.tight_layout()
+plt.savefig('assets/3.2/error/vocab_size.pdf', format='pdf', dpi=300,
+            transparent=True, bbox_inches='tight', pad_inches=0.01)
