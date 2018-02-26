@@ -1,4 +1,4 @@
-# EXECUTION TIME: 4s
+# EXECUTION TIME: 7s
 
 # Python 3 ImportError
 import sys
@@ -64,7 +64,12 @@ params = [Params(True, 1.0),
           Params(True, 0.5),
           Params(True, 0.75),
           Params(False, 1.0),
-          Params(False, 1-1/np.exp(1))]
+          Params(False, 1-1/np.exp(1)),
+          # 100% fraction with replacement
+          Params(True, 1.0),
+          Params(True, 1.0),
+          Params(True, 1.0),
+          Params(True, 1.0)]
 
 for j, (replace, fraction) in enumerate(params):
     # index
