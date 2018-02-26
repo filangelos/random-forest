@@ -86,6 +86,7 @@ for j, (replace, fraction) in enumerate(params):
                     data_train[idx, 1],
                     c=list(map(lambda l: cmap[l],
                                data_train[idx, 2])), alpha=1.0)
+    ax_main.set_title(title)
     # add secondary axes
     ax_sec = fig.add_axes([0.85, 0.85, 0.2, 0.2])
     bars, bins = ya.util.histc(data_train[idx, 2], return_bins=True)
