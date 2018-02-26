@@ -1,3 +1,5 @@
+# EXECUTION TIME: 1m27s
+
 # Python 3 ImportError
 import sys
 sys.path.append('.')

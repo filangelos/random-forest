@@ -29,6 +29,10 @@ class TestSetup(unittest.TestCase):
         import sklearn
         return self.assertIsNotNone(sklearn)
 
+    def test__opencv(self):
+        import cv2
+        return self.assertIsNotNone(cv2)
+
 
 if __name__ == '__main__':
     unittest.main()

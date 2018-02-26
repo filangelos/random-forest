@@ -1,3 +1,5 @@
+# EXECUTION TIME: 52m3s
+
 # Python 3 ImportError
 import sys
 sys.path.append('.')
@@ -42,14 +44,14 @@ grid_params = {'n_estimators': [10, 20, 50, 100, 250, 500, 1000],
 
 try:
     # fetch GridSearchCV object from `tmp` folder
-    search = pickle.load(open('tmp/3.2_search', 'rb'))
+    search = pickle.load(open('tmp/3.2_search.pkl', 'rb'))
 except Exception:
     # Cross-Validation Container
     # WARNING: execution time ~50 minutes
     search = GridSearchCV(RandomForestClassifier(),
                           param_grid=grid_params, cv=10).fit(X_train, y_train)
     # cache GridSearchCV object to `tmp` folder
-    pickle.dump(search, open('tmp/3.2_search', 'wb'))
+    pickle.dump(search, open('tmp/3.2_search.pkl', 'wb'))
 
 # Best Parameters
 best_params_ = search.best_params_

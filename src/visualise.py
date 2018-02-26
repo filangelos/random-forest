@@ -12,62 +12,6 @@ sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
 
 
-def plot_toydata(data: np.ndarray,
-                 title: str = None,
-                 xlabel: str = None,
-                 ylabel: str = None,
-                 alpha: float = 1.0,
-                 new_figure: bool = False,
-                 show: bool = False,
-                 savefig_path: str = None,
-                 ax=None) -> None:
-    """Plot `getData('Toy_Spiral')` data.
-
-    Parameters
-    ----------
-    data: numpy.ndarray
-        Data to be plotted, [x1 x2 y]
-    title: str
-        Figure Title
-    xlabel: str
-        Figure x-axis label
-    ylabel: str
-        Figure y-axis label
-    alpha: float
-        Opacity
-    new_figure: bool
-        Create new `plt.figure()`
-    show: bool
-        Flag to call `plt.show()`
-    savefig_path: str
-        `plt.savefig()` path
-    """
-    # color map
-    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
-    # create new figure
-    if new_figure:
-        plt.figure()
-    # scatter plot
-    plt.scatter(data[:, 0], data[:, 1], c=list(
-        map(lambda l: cmap[l], data[:, 2])), alpha=alpha)
-    # figure title
-    if title is not None:
-        plt.title(title)
-    # figure xlabel
-    if xlabel is not None:
-        plt.xlabel(xlabel)
-    # figure ylabel
-    if ylabel is not None:
-        plt.ylabel(ylabel)
-    # save figure to file
-    if isinstance(savefig_path, str):
-        plt.savefig('assets/%s.pdf' % savefig_path, format='pdf', dpi=300,
-                    transparent=True, bbox_inches='tight', pad_inches=0.01)
-    # show figure
-    if show:
-        plt.show()
-
-
 def visualise_splitfunc(idx_best,
                         data,
                         dim,

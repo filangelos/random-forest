@@ -1,3 +1,5 @@
+# EXECUTION TIME: 17m48
+
 # Python 3 ImportError
 import sys
 sys.path.append('.')
@@ -68,7 +70,3 @@ for num_features in [2, 4, 16, 64, 128, 256, 512]:
                 bbox_inches='tight',
                 pad_inches=0.01)
     print('| %03d DONE |' % num_features)
-
-###########################################################################
-# KMeans vs MiniBatchKMeans
-###########################################################################

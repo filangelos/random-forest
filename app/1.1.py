@@ -1,11 +1,21 @@
+# EXECUTION TIME: 4s
+
 # Python 3 ImportError
 import sys
 sys.path.append('.')
 
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import typing
 
 import src as ya
+
+# prettify plots
+plt.rcParams['figure.figsize'] = [3.0, 3.0]
+sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
+
+b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
 
 np.random.seed(0)
 
@@ -65,8 +75,28 @@ for j, (replace, fraction) in enumerate(params):
     title = 'Fraction: %.2f%%, Uniqueness %.2f%%\n' % (
         fraction*100, card)
     title += '[With Replacement]' if replace else '[Without Replacement]'
-    # visualise
-    ya.visualise.plot_toydata(data=data_train[idx, :],
-                              new_figure=True,
-                              title=title,
-                              savefig_path='1.1/subset_%i' % j)
+    # color map
+    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
+    # create new figure
+    fig = plt.figure()
+    # add main axes
+    ax_main = fig.add_axes([0.1, 0.1, 1.0, 1.0])
+    # scatter plot
+    ax_main.scatter(data_train[idx, 0],
+                    data_train[idx, 1],
+                    c=list(map(lambda l: cmap[l],
+                               data_train[idx, 2])), alpha=1.0)
+    # add secondary axes
+    ax_sec = fig.add_axes([0.85, 0.85, 0.2, 0.2])
+    bars, bins = ya.util.histc(data_train[idx, 2], return_bins=True)
+    norm_bars = bars / np.sum(bars)
+    ax_sec.bar(bins, norm_bars, color=[b_sns, g_sns, r_sns])
+    ax_sec.set_xlim([0.5, 3.5])
+    ax_sec.set_ylim([0, np.max(norm_bars)*1.05])
+    ax_sec.set_yticks([0.33])
+    ax_sec.set_xticks([])
+    ax_sec.set_xlabel('Class\nRepresentation', fontdict={'fontsize': 5})
+    # save figure to file
+    savefig_path = '1.1/subset_%i' % j
+    fig.savefig('assets/%s.pdf' % savefig_path, format='pdf', dpi=300,
+                transparent=True, bbox_inches='tight', pad_inches=0.01)
