@@ -86,7 +86,8 @@ def pickle_load__getCaltech(codebook: str,
                             num_features: int) -> typing.Optional[Data]:
     try:
         return pickle.load(
-            open('tmp/caltech_%s_%i.pkl' % (codebook, num_features), 'rb'))
+            open('tmp/models/caltech_%s_%i.pkl' % (codebook, num_features),
+                 'rb'))
     except Exception:
         pass
 
@@ -238,7 +239,8 @@ def getCaltech_KMeans(minibatch: bool = False,
                       num_testing_samples_per_class: int = 15,
                       random_state: int = None,
                       pickle_dump: bool = True) -> Data:
-    """Caltech 101 training and testing data generator.
+    """Caltech 101 training and testing data generator
+    using KMeans codebook.
 
     Parameters
     ----------
@@ -317,7 +319,85 @@ def getCaltech_KMeans(minibatch: bool = False,
     if pickle_dump:
         codebook = 'kmeans' if minibatch else 'minibatch-kmeans'
         pickle.dump(Data(data_train, data_query), open(
-            'tmp/caltech_%s_%i.pkl' % (codebook, num_features), 'wb'))
+            'tmp/models/caltech_%s_%i.pkl' % (codebook, num_features), 'wb'))
+
+    return Data(data_train, data_query)
+
+
+def getCaltech_RandomForest(savefig_images: bool = False,
+                            num_features: int = 10,
+                            num_descriptors: int = 100000,
+                            num_training_samples_per_class: int = 15,
+                            num_testing_samples_per_class: int = 15,
+                            random_state: int = None,
+                            pickle_dump: bool = True) -> Data:
+    """Caltech 101 training and testing data generator
+    using Random Forest Codebook.
+
+    Parameters
+    ----------
+    savefig_images: bool
+        Save raw training & testing images and their
+        SIFT masked grayscale transforms
+    num_descriptors: int
+        Number of SIFT descriptors kept for BoW
+    num_training_samples_per_class: int
+        Number of samples per class used for training
+    num_testing_samples_per_class: int
+        Number of samples per class used for testing
+    random_state: int
+        `np.random.seed` initial state
+
+    Returns
+    -------
+    data: NamedTuple
+        * data_train: numpy.ndarray
+        * data_query: numpy.ndarray
+    """
+    class_list, descriptors_random, raw_train, raw_test, images_train, \
+        images_test = getCaltech_pre(num_features, num_descriptors,
+                                     num_training_samples_per_class,
+                                     num_testing_samples_per_class,
+                                     random_state, pickle_dump)
+
+    if savefig_images:
+        getCaltech_plot(class_list, images_train, images_test)
+
+    # K-Means clustering algorithm
+    codebook_algorithm = RandomTreesEmbedding(
+        n_estimators=num_features).fit(descriptors_random)
+
+    n_out = codebook_algorithm.transform(raw_train[0][0]).sum(axis=0).shape[1]
+
+    # vector quantisation
+    data_train = np.zeros(
+        (len(class_list)*num_training_samples_per_class, n_out+1))
+
+    for i in range(len(class_list)):
+        for j in range(num_training_samples_per_class):
+            # set features
+            data_train[num_training_samples_per_class * (i)+j, :-1] = codebook_algorithm.transform(
+                raw_train[i][j]).sum(axis=0).ravel()
+            # set label
+            data_train[num_training_samples_per_class*(i)+j, -1] = i
+
+    # vector quantisation
+    data_query = np.zeros(
+        (len(class_list)*num_testing_samples_per_class, n_out+1))
+
+    for i in range(len(class_list)):
+        for j in range(num_testing_samples_per_class):
+            # set features
+            data_query[num_testing_samples_per_class *
+                       (i)+j, :-1] = codebook_algorithm.transform(
+                raw_test[i][j]).sum(axis=0).ravel()
+            # set label
+            data_query[num_testing_samples_per_class*(i)+j, -1] = i
+
+    # cache data to avoid recalculation every time
+    if pickle_dump:
+        pickle.dump(Data(data_train, data_query), open(
+            'tmp/models/caltech_rf.pkl', 'wb'))
 
     return Data(data_train, data_query)
 
@@ -374,5 +454,9 @@ def getCaltech(codebook: str = 'kmeans',
                                  num_training_samples_per_class,
                                  num_testing_samples_per_class, random_state,
                                  pickle_dump)
-    elif codebook == 'randon-forest':
-        pass
+    elif codebook == 'random-forest':
+        return getCaltech_RandomForest(savefig_images,
+                                       num_features, num_descriptors,
+                                       num_training_samples_per_class,
+                                       num_testing_samples_per_class, random_state,
+                                       pickle_dump)
