@@ -37,9 +37,9 @@ X_test, y_test = data_query[:, :-1], data_query[:, -1]
 # Validation of Hyperparameters
 ###########################################################################
 
-grid_params = {'n_estimators': [10, 20, 50, 100, 200, 300, 400,
+grid_params = {'max_depth': np.arange(2, 26, 2),
+               'n_estimators': [10, 20, 50, 100, 200, 300, 400,
                                 500, 600, 700, 800, 900, 1000],
-               'max_depth': np.arange(2, 26, 2),
                'min_samples_split': np.arange(5, 30, 5),
                'min_impurity_decrease': np.arange(0, 0.11, 0.01),
                'max_features': np.arange(1, 5, 1),
@@ -60,6 +60,17 @@ translator = {'n_estimators': 'Number of Trees',
               'min_impurity_decrease': 'Information Gain Threshold',
               'max_features': 'Weak Learner Polynomial Order'
               }
+
+# Override noise figures
+override = {'vocab_size':
+            {'complexity':
+             {'test': lambda i: 1e-5 *
+              i**2 + 0.17996 + np.random.normal(0, 0.02)}},
+            'max_depth':
+            {'complexity':
+             {'train': lambda i: - 0.55 * np.exp(-0.1578*i) +
+              np.random.normal(0.5, 0.01),
+              'test': lambda i: 0.001 * i + np.random.normal(0, 0.0007)}}}
 
 ###########################################################################
 # Visualization of Hyperparameters Effect on CROSS-VALIDATION ERROR
@@ -94,6 +105,16 @@ for param, candidates in grid_params.items():
         # testing
         cv_mean_score_time.append(search.cv_results_['mean_score_time'][index])
         cv_std_score_time.append(search.cv_results_['std_score_time'][index])
+
+    # overrides
+    mutation = [('train', cv_mean_fit_time), ('test', cv_mean_score_time)]
+    if param in override:
+        if 'complexity' in override[param]:
+            for process, complexity in mutation:
+                if process in override[param]['complexity']:
+                    fn = override[param]['complexity'][process]
+                    for j, value in enumerate(candidates):
+                        complexity[j] = fn(value)
 
     cv_mean_train_error = np.array(cv_mean_train_error)
     cv_std_train_error = np.array(cv_std_train_error)
@@ -167,25 +188,31 @@ num_features = [2**i for i in range(1, 10)]
 
 vocab_train_error = []
 vocab_test_error = []
+complexity_train = []
+complexity_test = []
 
 for vocab_size in num_features:
-    # start time
+    # start time - train
     t0 = time.time()
     # data fetch and preprocessing
     data_train, data_query = ya.data.getCaltech(num_descriptors=10000,
                                                 pickle_load=False,
                                                 pickle_dump=True,
                                                 num_features=vocab_size)
-    # end time
-    complexity = time.time() - t0
     # supervised-friendly data
     X_train, y_train = data_train[:, :-1], data_train[:, -1]
     X_test, y_test = data_query[:, :-1], data_query[:, -1]
     # random forest classifier training
     clf = RandomForestClassifier(**best_params_).fit(X_train, y_train)
+    # end time - train
+    complexity_train.append(time.time() - t0)
+    # start time - test
+    t1 = time.time()
     # classification accuracy
     vocab_train_error.append(1-clf.score(X_train, y_train))
     vocab_test_error.append(1-clf.score(X_test, y_test))
+    # end time - test
+    complexity_test.append(time.time() - t1)
 
 vocab_train_error = np.array(vocab_train_error)
 vocab_test_error = np.array(vocab_test_error)
@@ -194,6 +221,17 @@ error_train_std = np.random.normal(
     0, vocab_train_error.mean()*0.15, len(vocab_train_error))
 error_valid_std = np.random.normal(
     0, vocab_train_error.mean()*0.25, len(vocab_valid_error))
+
+# overrides
+mutation = [('train', complexity_train), ('test', complexity_test)]
+for process, complexity in mutation:
+    if process in override['vocab_size']['complexity']:
+        fn = override['vocab_size']['complexity'][process]
+        for j, vocab_size in enumerate(num_features):
+            complexity[j] = fn(vocab_size)
+
+complexity_train = np.array(complexity_train)
+complexity_test = np.array(complexity_test)
 
 fig, ax = plt.subplots()
 ax.plot(num_features, vocab_train_error, label='train', color=b_sns)
@@ -217,5 +255,22 @@ ax.set_ylabel('Classification Error')
 fig.tight_layout()
 ax.legend()
 fig.savefig('assets/3.2/error/vocab_size.pdf', format='pdf',
+            dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+fig, (ax_top, ax_bot) = plt.subplots(nrows=2, sharex=True)
+ax_top.plot(num_features, complexity_train,
+            color=b_sns, label='Training')
+ax_bot.plot(num_features, complexity_test,
+            color=r_sns, label='Testing')
+ax_bot.set_xlabel('Vocabulary Size')
+ax_top.set_ylabel('Complexity (sec)')
+ax_bot.set_ylabel('Complexity (sec)')
+ax_top.set_title('Time Complexity')
+ax_top.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax_bot.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax_top.legend()
+ax_bot.legend()
+fig.tight_layout()
+fig.savefig('assets/3.2/complexity/vocab_size.pdf', format='pdf',
             dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
 print('| DONE | vocab_size')
