@@ -141,11 +141,12 @@ def getCaltech_pre(num_features: int = 256,
             raw_train[c][i] = des
             for d in des:
                 descriptors_train.append(d)
-            # images to plot
-            sift_img = cv2.drawKeypoints(
-                gray, kp, img,
-                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            images_train.append((raw_img, sift_img))
+            if i == 0:
+                # images to plot
+                sift_img = cv2.drawKeypoints(
+                    gray, kp, img,
+                    flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                images_train.append((raw_img, sift_img))
     # NumPy-friendly array of descriptors
     descriptors_train = np.asarray(descriptors_train)
     # random selection of descriptors WITHOUT REPLACEMENT
@@ -178,11 +179,12 @@ def getCaltech_pre(num_features: int = 256,
             kp, des = sift.detectAndCompute(gray, None)
             # store descriptors
             raw_test[c][i] = des
-            # images to plot
-            sift_img = cv2.drawKeypoints(
-                gray, kp, img,
-                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            images_test.append((raw_img, sift_img))
+            if i == 0:
+                # images to plot
+                sift_img = cv2.drawKeypoints(
+                    gray, kp, img,
+                    flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                images_test.append((raw_img, sift_img))
 
     Output = typing.NamedTuple('Output', [('class_list', list),
                                           ('descriptors_random', np.ndarray),
