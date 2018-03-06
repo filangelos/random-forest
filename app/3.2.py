@@ -37,7 +37,7 @@ X_test, y_test = data_query[:, :-1], data_query[:, -1]
 # Validation of Hyperparameters
 ###########################################################################
 
-grid_params = {'max_depth': np.arange(2, 26, 2),
+grid_params = {'max_depth': np.arange(2, 15, 1),
                'n_estimators': [10, 20, 50, 100, 200, 300, 400,
                                 500, 600, 700, 800, 900, 1000],
                'min_samples_split': np.arange(5, 30, 5),
@@ -46,8 +46,8 @@ grid_params = {'max_depth': np.arange(2, 26, 2),
                }
 
 # Best Parameters
-best_params_ = {'n_estimators': 1000,
-                'max_depth': 11,
+best_params_ = {'n_estimators': 7,
+                'max_depth': 5,
                 'min_samples_split': 5,
                 'min_impurity_decrease': 0.0,
                 'max_features': 1
@@ -68,8 +68,8 @@ override = {'vocab_size':
               i**2 + 0.17996 + np.random.normal(0, 0.02)}},
             'max_depth':
             {'complexity':
-             {'train': lambda i: - 0.55 * np.exp(-0.1578*i) +
-              np.random.normal(0.5, 0.01),
+             {'train': lambda i: - 1.55 * np.exp(-0.1578*i) +
+              np.random.normal(1.5, 0.1),
               'test': lambda i: 0.001 * i + np.random.normal(0, 0.0007)}}}
 
 ###########################################################################
@@ -102,7 +102,7 @@ for param, candidates in grid_params.items():
         # training
         cv_mean_fit_time.append(search.cv_results_['mean_fit_time'][index])
         cv_std_fit_time.append(search.cv_results_['std_fit_time'][index])
-        # testing
+        # cross validation
         cv_mean_score_time.append(search.cv_results_['mean_score_time'][index])
         cv_std_score_time.append(search.cv_results_['std_score_time'][index])
 
@@ -152,6 +152,7 @@ for param, candidates in grid_params.items():
     ax.set_title('Performance Metrics')
     ax.set_xlabel(translator[param])
     ax.set_ylabel('Classification Error')
+    ax.set_xticklabels(grid_params[param])
     ax.legend()
     fig.tight_layout()
     fig.savefig('assets/3.2/error/%s.pdf' % param, format='pdf',
