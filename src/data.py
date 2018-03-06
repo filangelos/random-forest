@@ -204,31 +204,39 @@ def getCaltech_plot(class_list: typing.List[str],
     # iterate over image classes
     for c in range(len(class_list)):
         # TRAINING
-        fig, axes = plt.subplots(ncols=2, figsize=(6.0, 3.0))
-        axes[0].imshow(images_train[c][0], interpolation='nearest')
-        axes[0].set_axis_off()
-        axes[0].set_title('Training Sample\n%s: Original' %
-                          (class_list[c].capitalize()))
-        axes[1].imshow(images_train[c][1], interpolation='nearest')
-        axes[1].set_axis_off()
-        axes[1].set_title('Training Sample\n%s: SIFT' %
-                          (class_list[c].capitalize()))
-        plt.tight_layout()
-        fig.savefig('assets/3.1/examples/train/%s.pdf' % class_list[c],
+        fig, ax = plt.subplots(figsize=(3.0, 3.0))
+        ax.imshow(images_train[c][0], interpolation='nearest')
+        ax.set_axis_off()
+        ax.set_title('%s Train: Original' %
+                     (class_list[c].capitalize()))
+        fig.savefig('assets/3.1/examples/train/%s_Original.pdf' % class_list[c],
+                    format='pdf', dpi=300, transparent=True,
+                    bbox_inches='tight', pad_inches=0.01)
+        fig, ax = plt.subplots(figsize=(3.0, 3.0))
+        ax.imshow(images_train[c][1], interpolation='nearest')
+        ax.set_axis_off()
+        ax.set_title('%s Train: SIFT' %
+                     (class_list[c].capitalize()))
+        fig.tight_layout()
+        fig.savefig('assets/3.1/examples/train/%s_SIFT.pdf' % class_list[c],
                     format='pdf', dpi=300, transparent=True,
                     bbox_inches='tight', pad_inches=0.01)
         # TESTING
-        fig, axes = plt.subplots(ncols=2, figsize=(6.0, 3.0))
-        axes[0].imshow(images_test[c][0], interpolation='nearest')
-        axes[0].set_axis_off()
-        axes[0].set_title('Testing Sample\n%s: Original' %
-                          (class_list[c].capitalize()))
-        axes[1].imshow(images_test[c][1], interpolation='nearest')
-        axes[1].set_axis_off()
-        axes[1].set_title('Testing Sample\n%s: SIFT' %
-                          (class_list[c].capitalize()))
-        plt.tight_layout()
-        fig.savefig('assets/3.1/examples/test/%s.pdf' % class_list[c],
+        fig, ax = plt.subplots(figsize=(3.0, 3.0))
+        ax.imshow(images_test[c][0], interpolation='nearest')
+        ax.set_axis_off()
+        ax.set_title('%s Test: Original' %
+                     (class_list[c].capitalize()))
+        fig.savefig('assets/3.1/examples/test/%s_Original.pdf' % class_list[c],
+                    format='pdf', dpi=300, transparent=True,
+                    bbox_inches='tight', pad_inches=0.01)
+        fig, ax = plt.subplots(figsize=(3.0, 3.0))
+        ax.imshow(images_test[c][1], interpolation='nearest')
+        ax.set_axis_off()
+        ax.set_title('%s Test: SIFT' %
+                     (class_list[c].capitalize()))
+        fig.tight_layout()
+        fig.savefig('assets/3.1/examples/test/%s_SIFT.pdf' % class_list[c],
                     format='pdf', dpi=300, transparent=True,
                     bbox_inches='tight', pad_inches=0.01)
 
