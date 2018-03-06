@@ -39,7 +39,7 @@ X_test, y_test = data_query[:, :-1], data_query[:, -1]
 
 grid_params = {'n_estimators': [10, 20, 50, 100, 200, 300, 400,
                                 500, 600, 700, 800, 900, 1000],
-               'max_depth': np.arange(2, 20, 2),
+               'max_depth': np.arange(2, 26, 2),
                'min_samples_split': np.arange(5, 30, 5),
                'min_impurity_decrease': np.arange(0, 0.11, 0.01),
                'max_features': np.arange(1, 5, 1),
@@ -121,8 +121,8 @@ for param, candidates in grid_params.items():
                     cv_mean_train_error + cv_std_train_error,
                     color=y_sns, alpha=0.4)
     ax.fill_between(grid_params[param],
-                    cv_mean_test_error - 0.2*cv_std_test_error,
-                    cv_mean_test_error + 0.2*cv_std_test_error,
+                    cv_mean_test_error - 0.5*cv_std_test_error,
+                    cv_mean_test_error + 0.5*cv_std_test_error,
                     color=y_sns, alpha=0.4)
     ax.vlines(grid_params[param][np.argmin(cv_mean_test_error)],
               (cv_mean_train_error - 0.2*cv_std_train_error).min()*0.95,
