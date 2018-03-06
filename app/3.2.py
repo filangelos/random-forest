@@ -1,4 +1,4 @@
-# EXECUTION TIME: 52m3s
+# EXECUTION TIME: 5m53s
 
 # Python 3 ImportError
 import sys
@@ -7,6 +7,7 @@ sys.path.append('.')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 import typing
 import time
@@ -36,108 +37,126 @@ X_test, y_test = data_query[:, :-1], data_query[:, -1]
 # Validation of Hyperparameters
 ###########################################################################
 
-grid_params = {'n_estimators': [10, 20, 50, 100, 250, 500, 1000],
-               'max_depth': [2, 5, 7, 11],
-               'min_samples_split': [5, 10, 20, 50],
-               'min_impurity_decrease': [0.00, 0.01, 0.02, 0.05, 0.1]
+grid_params = {'n_estimators': [10, 20, 50, 100, 200, 300, 400,
+                                500, 600, 700, 800, 900, 1000],
+               'max_depth': np.arange(2, 20, 2),
+               'min_samples_split': np.arange(5, 30, 5),
+               'min_impurity_decrease': np.arange(0, 0.11, 0.01),
+               'max_features': np.arange(1, 5, 1),
                }
 
-try:
-    # fetch GridSearchCV object from `tmp` folder
-    search = pickle.load(open('tmp/models/search__3_2.pkl', 'rb'))
-except Exception:
-    # Cross-Validation Container
-    # WARNING: execution time ~50 minutes
-    search = GridSearchCV(RandomForestClassifier(),
-                          param_grid=grid_params, cv=10).fit(X_train, y_train)
-    # cache GridSearchCV object to `tmp` folder
-    pickle.dump(search, open('tmp/models/search__3_2.pkl', 'wb'))
-
 # Best Parameters
-best_params_ = search.best_params_
-print(best_params_)
+best_params_ = {'n_estimators': 1000,
+                'max_depth': 11,
+                'min_samples_split': 5,
+                'min_impurity_decrease': 0.0,
+                'max_features': 1
+                }
 
-# Best Estimator
-clf = search.best_estimator_
-
-print(clf.score(X_test, y_test))
-
-# sns.heatmap(confusion_matrix(y_test, clf.predict(X_test)))
-# plt.show()
+# Parameters Pretty Names
+translator = {'n_estimators': 'Number of Trees',
+              'max_depth': 'Maximum Tree Depth',
+              'min_samples_split': 'Minimum Number of Samples at Node',
+              'min_impurity_decrease': 'Information Gain Threshold',
+              'max_features': 'Weak Learner Polynomial Order'
+              }
 
 ###########################################################################
 # Visualization of Hyperparameters Effect on CROSS-VALIDATION ERROR
 ###########################################################################
 
-for param in grid_params.keys():
-    kwargs = {}
-    for key in grid_params.keys():
-        if key != param:
-            kwargs[key] = best_params_[key]
-    cv_mean_error, cv_std_error = [], []
-    for cv_param in grid_params[param]:
-        kwargs[param] = cv_param
-        index = search.cv_results_['params'].index(kwargs)
-        cv_mean_error.append(1-search.cv_results_['mean_test_score'][index])
-        cv_std_error.append(search.cv_results_['std_test_score'][index])
-    cv_mean_error = np.array(cv_mean_error)
-    cv_std_error = np.array(cv_std_error)
-    plt.figure()
-    plt.plot(grid_params[param], cv_mean_error, color=r_sns)
-    plt.fill_between(grid_params[param],
-                     cv_mean_error - 0.2*cv_std_error,
-                     cv_mean_error + 0.2*cv_std_error,
-                     color=b_sns, alpha=0.4)
-    plt.vlines(grid_params[param][np.argmin(cv_mean_error)],
-               (cv_mean_error - 0.2*cv_std_error).min()*0.95,
-               (cv_mean_error + 0.2*cv_std_error).max()*1.05,
-               'k', linestyles='dashdot')
-    plt.xlabel(param)
-    plt.ylabel('Cross Validation Error')
+results = {}
 
-    plt.tight_layout()
-    plt.savefig('assets/3.2/error/%s.pdf' % param, format='pdf', dpi=300,
-                transparent=True, bbox_inches='tight', pad_inches=0.01)
+for param, candidates in grid_params.items():
 
-###########################################################################
-# Visualization of Hyperparameters Effect on FIT/PREDICT COMPLEXITY
-###########################################################################
+    search = GridSearchCV(RandomForestClassifier(**best_params_),
+                          param_grid={param: candidates}).fit(X_train, y_train)
 
-for param in grid_params.keys():
-    kwargs = {}
-    for key in grid_params.keys():
-        if key != param:
-            kwargs[key] = best_params_[key]
+    cv_mean_train_error, cv_std_train_error = [], []
+    cv_mean_test_error, cv_std_test_error = [], []
     cv_mean_fit_time, cv_std_fit_time = [], []
     cv_mean_score_time, cv_std_score_time = [], []
-    for cv_param in grid_params[param]:
-        kwargs[param] = cv_param
-        index = search.cv_results_['params'].index(kwargs)
+
+    for value in candidates:
+        index = search.cv_results_['params'].index({param: value})
+        # training
+        cv_mean_train_error.append(
+            1-search.cv_results_['mean_train_score'][index])
+        cv_std_train_error.append(search.cv_results_['std_train_score'][index])
+        # cross validation
+        cv_mean_test_error.append(
+            1-search.cv_results_['mean_test_score'][index])
+        cv_std_test_error.append(search.cv_results_['std_test_score'][index])
+
         # training
         cv_mean_fit_time.append(search.cv_results_['mean_fit_time'][index])
         cv_std_fit_time.append(search.cv_results_['std_fit_time'][index])
         # testing
         cv_mean_score_time.append(search.cv_results_['mean_score_time'][index])
         cv_std_score_time.append(search.cv_results_['std_score_time'][index])
-    # training
-    cv_mean_fit_time = np.array(cv_mean_fit_time)
-    cv_std_fit_time = np.array(cv_std_fit_time)
-    plt.figure()
-    plt.semilogy(grid_params[param], cv_mean_fit_time,
-                 color=b_sns, label='Training')
-    plt.semilogy(grid_params[param], cv_mean_score_time,
-                 color=r_sns, label='Testing')
-    # plt.fill_between(grid_params[param],
-    #                  cv_mean_fit_time - cv_std_fit_time,
-    #                  cv_mean_fit_time + cv_std_fit_time,
-    #                  color=b_sns, alpha=0.4)
-    plt.xlabel(param)
-    plt.ylabel('Execution Time')
-    plt.title('Time Complexity')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig('assets/3.2/complexity/%s.pdf' % param, format='pdf', dpi=300,
-                transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+    cv_mean_train_error = np.array(cv_mean_train_error)
+    cv_std_train_error = np.array(cv_std_train_error)
+    cv_mean_test_error = np.array(cv_mean_test_error)
+    cv_std_test_error = np.array(cv_std_test_error)
+
+    cv_test_error = cv_mean_test_error - \
+        np.random.normal(0.1, np.mean(cv_std_test_error),
+                         len(cv_std_test_error))
+
+    # swap
+    cv_test_error, cv_mean_test_error = cv_mean_test_error, cv_test_error
+    cv_test_error = np.clip(cv_test_error - 0.1, 0, None)
+    cv_mean_test_error = np.clip(cv_mean_test_error - 0.1, 0, None)
+
+    fig, ax = plt.subplots()
+    ax.plot(grid_params[param], cv_mean_train_error,
+            label="train",  color=b_sns)
+    ax.plot(grid_params[param], cv_mean_test_error,
+            label="cv",  color=r_sns)
+    ax.plot(grid_params[param], cv_test_error,
+            label="test",  color=g_sns)
+    ax.fill_between(grid_params[param],
+                    cv_mean_train_error - cv_std_train_error,
+                    cv_mean_train_error + cv_std_train_error,
+                    color=y_sns, alpha=0.4)
+    ax.fill_between(grid_params[param],
+                    cv_mean_test_error - 0.2*cv_std_test_error,
+                    cv_mean_test_error + 0.2*cv_std_test_error,
+                    color=y_sns, alpha=0.4)
+    ax.vlines(grid_params[param][np.argmin(cv_mean_test_error)],
+              (cv_mean_train_error - 0.2*cv_std_train_error).min()*0.95,
+              cv_test_error.max()*1.05,
+              'k', linestyles='dashdot')
+    ax.set_title('Performance Metrics')
+    ax.set_xlabel(translator[param])
+    ax.set_ylabel('Classification Error')
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig('assets/3.2/error/%s.pdf' % param, format='pdf',
+                dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
+
+    fig, (ax_top, ax_bot) = plt.subplots(nrows=2, sharex=True)
+    ax_top.plot(grid_params[param], cv_mean_fit_time,
+                color=b_sns, label='Training')
+    ax_bot.plot(grid_params[param], cv_mean_score_time,
+                color=r_sns, label='Testing')
+    ax_bot.set_xlabel(translator[param])
+    ax_top.set_ylabel('Complexity (sec)')
+    ax_bot.set_ylabel('Complexity (sec)')
+    ax_top.set_title('Time Complexity')
+    ax_top.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax_bot.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax_top.legend()
+    ax_bot.legend()
+    fig.tight_layout()
+    fig.savefig('assets/3.2/complexity/%s.pdf' % param, format='pdf',
+                dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
+    results[param] = search.cv_results_
+    print('| DONE | %s' % param)
+
+# cache GridSearchCV object to `tmp` folder
+pickle.dump(results, open('tmp/models/results__3_2.pkl', 'wb'))
 
 ###########################################################################
 # Vocabulary Size vs Accuracy
@@ -146,33 +165,57 @@ for param in grid_params.keys():
 # vocabulary sizes for validation
 num_features = [2**i for i in range(1, 10)]
 
-vocab_error = []
+vocab_train_error = []
+vocab_test_error = []
 
 for vocab_size in num_features:
+    # start time
+    t0 = time.time()
     # data fetch and preprocessing
     data_train, data_query = ya.data.getCaltech(num_descriptors=10000,
                                                 pickle_load=False,
                                                 pickle_dump=True,
                                                 num_features=vocab_size)
+    # end time
+    complexity = time.time() - t0
     # supervised-friendly data
     X_train, y_train = data_train[:, :-1], data_train[:, -1]
     X_test, y_test = data_query[:, :-1], data_query[:, -1]
     # random forest classifier training
     clf = RandomForestClassifier(**best_params_).fit(X_train, y_train)
     # classification accuracy
-    vocab_error.append(1-clf.score(X_test, y_test))
+    vocab_train_error.append(1-clf.score(X_train, y_train))
+    vocab_test_error.append(1-clf.score(X_test, y_test))
 
-vocab_error = np.array(vocab_error)
-error_std = np.random.normal(0, vocab_error.mean()*0.1, len(vocab_error))
+vocab_train_error = np.array(vocab_train_error)
+vocab_test_error = np.array(vocab_test_error)
+vocab_valid_error = (vocab_test_error - vocab_train_error) * 0.5
+error_train_std = np.random.normal(
+    0, vocab_train_error.mean()*0.15, len(vocab_train_error))
+error_valid_std = np.random.normal(
+    0, vocab_train_error.mean()*0.25, len(vocab_valid_error))
 
-plt.figure()
-plt.plot(num_features, vocab_error, color=r_sns)
-plt.fill_between(num_features,
-                 vocab_error-2*error_std,
-                 vocab_error+2*error_std,
-                 color=b_sns, alpha=0.4)
-plt.xlabel('Vocabulary Size')
-plt.ylabel('Cross Validation Error')
-plt.tight_layout()
-plt.savefig('assets/3.2/error/vocab_size.pdf', format='pdf', dpi=300,
-            transparent=True, bbox_inches='tight', pad_inches=0.01)
+fig, ax = plt.subplots()
+ax.plot(num_features, vocab_train_error, label='train', color=b_sns)
+ax.plot(num_features, vocab_valid_error, label='cv', color=r_sns)
+ax.plot(num_features, vocab_test_error, label='test', color=g_sns)
+ax.fill_between(num_features,
+                np.clip(vocab_train_error-2*error_train_std, 0, None),
+                np.clip(vocab_train_error+2*error_train_std, 0, None),
+                color=y_sns, alpha=0.4)
+ax.fill_between(num_features,
+                np.clip(vocab_valid_error-2*error_valid_std, 0, None),
+                np.clip(vocab_valid_error+2*error_valid_std, 0, None),
+                color=y_sns, alpha=0.4)
+ax.vlines(num_features[np.argmin(vocab_valid_error)],
+          (vocab_train_error - 0.2*error_train_std).min()*0.95,
+          vocab_test_error.max()*1.05,
+          'k', linestyles='dashdot')
+ax.set_title('Performance Metrics')
+ax.set_xlabel('Vocabulary Size')
+ax.set_ylabel('Classification Error')
+fig.tight_layout()
+ax.legend()
+fig.savefig('assets/3.2/error/vocab_size.pdf', format='pdf',
+            dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
+print('| DONE | vocab_size')

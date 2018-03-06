@@ -440,7 +440,9 @@ def getCaltech(codebook: str = 'kmeans',
     """
     # use cached data
     if pickle_load:
-        return pickle_load__getCaltech(codebook, num_features)
+        cache = pickle_load__getCaltech(codebook, num_features)
+        if cache is not None:
+            return cache
     # build codebook
     if codebook == 'kmeans':
         return getCaltech_KMeans(False, savefig_images,
@@ -458,5 +460,5 @@ def getCaltech(codebook: str = 'kmeans',
         return getCaltech_RandomForest(savefig_images,
                                        num_features, num_descriptors,
                                        num_training_samples_per_class,
-                                       num_testing_samples_per_class, random_state,
-                                       pickle_dump)
+                                       num_testing_samples_per_class,
+                                       random_state, pickle_dump)

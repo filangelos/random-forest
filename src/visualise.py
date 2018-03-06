@@ -7,6 +7,7 @@ import src as ya
 
 # prettify plots
 plt.rcParams['figure.figsize'] = [3.0, 3.0]
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
@@ -159,7 +160,7 @@ def plot_x_mean_std(x: np.ndarray,
         `plt.savefig()` path
     """
     if new_figure:
-        plt.figure()
+        plt.figure(figsize=(6.0, 2.0))
     # scatter plot
     plt.plot(x, mean, color=r_sns)
     plt.fill_between(x, mean-std, mean+std, color=b_sns, alpha=0.5)

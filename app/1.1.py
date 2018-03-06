@@ -48,10 +48,11 @@ for i, fraction in enumerate(fractions_set):
 ya.visualise.plot_x_mean_std(100*fractions_set,
                              mean=mean,
                              std=std,
-                             title='Unique Elements vs Fraction',
-                             xlabel='Fraction [%]',
-                             ylabel='Uniqueness [%]',
+                             title='Unique Elements against Fraction of Sampled Original Dataset',
+                             xlabel='Fraction of Subset Samples over Original Samples, $\\frac{n_{t}}{n}$ (%)',
+                             ylabel='Uniqueness (%)',
                              legend=True,
+                             new_figure=True,
                              savefig_path='1.1/uniqueness_vs_fraction')
 
 ###########################################################################
@@ -71,15 +72,13 @@ params = [Params(True, 1.0),
           Params(True, 1.0),
           Params(True, 1.0)]
 
+REPORT_TITLE = True
+
 for j, (replace, fraction) in enumerate(params):
     # index
     idx = np.random.choice(range(N), int(N*fraction), replace)
     # cardinality of subset
     card = 100 * len(np.unique(idx)) / len(idx)
-    # plot title
-    title = 'Fraction: %.2f%%, Uniqueness %.2f%%\n' % (
-        fraction*100, card)
-    title += '[With Replacement]' if replace else '[Without Replacement]'
     # color map
     cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
     # create new figure
@@ -91,7 +90,6 @@ for j, (replace, fraction) in enumerate(params):
                     data_train[idx, 1],
                     c=list(map(lambda l: cmap[l],
                                data_train[idx, 2])), alpha=1.0)
-    ax_main.set_title(title)
     # add secondary axes
     ax_sec = fig.add_axes([0.85, 0.85, 0.2, 0.2])
     bars, bins = ya.util.histc(data_train[idx, 2], return_bins=True)
@@ -101,7 +99,17 @@ for j, (replace, fraction) in enumerate(params):
     ax_sec.set_ylim([0, np.max(norm_bars)*1.05])
     ax_sec.set_yticks([0.33])
     ax_sec.set_xticks([])
-    ax_sec.set_xlabel('Class\nRepresentation', fontdict={'fontsize': 5})
+    # plot title
+    if not REPORT_TITLE:
+        title = 'Fraction: %.2f%%, Uniqueness %.2f%%' % (
+            fraction*100, card)
+        title += '[With Replacement]' if replace else '[Without Replacement]'
+        ax_main.set_title(title)
+    else:
+        title = 'Bootstrap Aggregated Subset %i' % (j-5)
+        ax_main.set_title(title, fontdict={'fontsize': 17})
+
+    # ax_sec.set_xlabel('Class\nRepresentation', fontdict={'fontsize': 5})
     # save figure to file
     savefig_path = '1.1/subset_%i' % j
     fig.savefig('assets/%s.pdf' % savefig_path, format='pdf', dpi=300,
