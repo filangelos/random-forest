@@ -1,4 +1,4 @@
-# EXECUTION TIME: 1m27s
+# EXECUTION TIME: 1m12s
 
 # Python 3 ImportError
 import sys
@@ -15,6 +15,7 @@ from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.datasets.samples_generator import make_blobs
 
 # prettify plots
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")

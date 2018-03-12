@@ -45,14 +45,14 @@ grid_params = {'max_features': ['auto', 1, 2],
 
 try:
     # fetch GridSearchCV object from `tmp` folder
-    search = pickle.load(open('tmp/models/search__3_2.pkl', 'rb'))
+    search = pickle.load(open('tmp/models/3.2/search.pkl', 'rb'))
 except Exception:
     # Cross-Validation Container
     # WARNING: execution time ~50 minutes
     search = GridSearchCV(RandomForestClassifier(),
                           param_grid=grid_params, cv=10).fit(X_train, y_train)
     # cache GridSearchCV object to `tmp` folder
-    pickle.dump(search, open('tmp/models/search__3_2.pkl', 'wb'))
+    pickle.dump(search, open('tmp/models/3.2/search.pkl', 'wb'))
 
 # Best Parameters
 best_params_ = search.best_params_

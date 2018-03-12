@@ -1,4 +1,4 @@
-# EXECUTION TIME: 7s
+# EXECUTION TIME: 5s
 
 # Python 3 ImportError
 import sys
@@ -13,6 +13,7 @@ import src as ya
 
 # prettify plots
 plt.rcParams['figure.figsize'] = [3.0, 3.0]
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")

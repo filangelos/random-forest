@@ -16,6 +16,7 @@ from sklearn.metrics import confusion_matrix
 import src as ya
 
 # prettify plots
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
@@ -49,14 +50,14 @@ grid_params = {'n_estimators': [10, 20, 50, 100, 250, 500, 1000],
 
 try:
     # fetch GridSearchCV object from `tmp` folder
-    search = pickle.load(open('tmp/models/search__3_3.pkl', 'rb'))
+    search = pickle.load(open('tmp/models/3.3/search.pkl', 'rb'))
 except Exception:
     # Cross-Validation Container
     # WARNING: execution time ~50 minutes
     search = GridSearchCV(RandomForestClassifier(),
                           param_grid=grid_params, cv=10).fit(X_train, y_train)
     # cache GridSearchCV object to `tmp` folder
-    pickle.dump(search, open('tmp/models/search__3_3.pkl', 'wb'))
+    pickle.dump(search, open('tmp/models/3.3/search.pkl', 'wb'))
 
 # Best Parameters
 best_params_ = search.best_params_

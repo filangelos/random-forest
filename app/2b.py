@@ -1,4 +1,4 @@
-# EXECUTION TIME:
+# EXECUTION TIME: 2m17s
 
 # Python 3 ImportError
 import sys
@@ -6,7 +6,6 @@ sys.path.append('.')
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 
 import pickle
@@ -19,6 +18,7 @@ import src as ya
 from src.struct import ForestParams
 
 # prettify plots
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
@@ -166,25 +166,7 @@ for param, candidates in grid_params.items():
     print('| DONE | %s' % param)
 
 # cache GridSearchCV object to `tmp` folder
-pickle.dump(results, open('tmp/models/results__2b.pkl', 'wb'))
-
-###########################################################################
-# Validation of Hyperparameters
-###########################################################################
-
-grid_params = {'n_estimators': [1, 5, 10, 20],
-               'max_depth': [2, 5, 7, 11],
-               'min_samples_split': [2, 5, 10, 15],
-               'min_impurity_decrease': [0.0, 0.01, 0.02, 0.05]
-               }
-
-# Cross-Validation Container
-search = GridSearchCV(RandomForestClassifier(),
-                      param_grid=grid_params, cv=10).fit(X_train, y_train)
-# Best Parameters
-best_params_ = search.best_params_
-
-print(best_params_)
+pickle.dump(results, open('tmp/models/2b/results.pkl', 'wb'))
 
 ###########################################################################
 # Visualization of Decision Boundaries
@@ -196,44 +178,50 @@ grid_params = {'n_estimators': [1, 5, 10, 20],
                'min_impurity_decrease': [0.0, 0.01, 0.02, 0.05]
                }
 
+max_depth_configs = [
+    # max_depth 2
+    {'max_depth': 2, 'min_samples_split': 10, 'n_estimators': 1},
+    # max_depth 5
+    {'max_depth': 5, 'min_samples_split': 2, 'n_estimators': 10},
+    # max_depth 7
+    {'max_depth': 7, 'min_samples_split': 2, 'n_estimators': 2},
+    # max_depth 11
+    {'max_depth': 11, 'min_samples_split': 2, 'n_estimators': 2}
+]
+
 # data range
 r = [-1.5, 1.5]
 # split function grid
 xx, yy = np.meshgrid(np.linspace(*r, 200), np.linspace(*r, 200))
 
-for param in grid_params.keys():
-    kwargs = {}
-    for key in grid_params.keys():
-        if key != param:
-            kwargs[key] = best_params_[key]
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6.0, 6.0))
-    for ax, cv_param in zip(axes.flatten(), grid_params[param]):
-        kwargs[param] = cv_param
-        clf = RandomForestClassifier(**kwargs).fit(X_train, y_train)
-        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6.0, 6.0))
+for ax, config in zip(axes.flatten(), max_depth_configs):
+    # classifier
+    clf = RandomForestClassifier(**config).fit(X_train, y_train)
+    # decision boundary calculation
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    # decision boundary line
+    ax.contour(xx, yy, Z, linewidths=0.8, colors='k')
+    # decision surfaces
+    ax.contourf(xx,
+                yy,
+                Z,
+                cmap=plt.cm.jet.from_list(
+                    'contourf', [b_sns, g_sns, r_sns], 3),
+                alpha=0.4)
+    ax.set_title('%s = %s' % ('Maximum Depth', config['max_depth']))
+    # color map
+    cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
+    # plot toy data
+    ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
+        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+    # plot test points
+    ax.scatter(test_points[:, 0], test_points[:, 1], c=list(
+        map(lambda l: cmap[l], clf.predict(test_points)),
+    ), edgecolors='k')
 
-        # decision boundary line
-        ax.contour(xx, yy, Z, linewidths=0.8, colors='k')
-        # decision surfaces
-        ax.contourf(xx,
-                    yy,
-                    Z,
-                    cmap=plt.cm.jet.from_list(
-                        'contourf', [b_sns, g_sns, r_sns], 3),
-                    alpha=0.4)
-        ax.set_title('%s=%s' % (param, cv_param))
-        # color map
-        cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
-        # plot toy data
-        ax.scatter(data_train[:, 0], data_train[:, 1], c=list(
-            map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
-        # plot test points
-        ax.scatter(test_points[:, 0], test_points[:, 1], c=list(
-            map(lambda l: cmap[l], clf.predict(test_points)),
-        ), edgecolors='k')
-
-        fig.savefig('assets/2/boundaries/%s.pdf' % param, format='pdf',
-                    dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig('assets/2/boundaries/x_%s.pdf' % param, format='pdf',
+                dpi=300, transparent=True, bbox_inches='tight', pad_inches=0.01)
 
 ###########################################################################
 # Weak Learner - Visualization

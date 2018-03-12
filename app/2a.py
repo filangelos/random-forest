@@ -1,4 +1,4 @@
-# EXECUTION TIME:
+# EXECUTION TIME: 6s
 
 # Python 3 ImportError
 import sys
@@ -15,6 +15,7 @@ import src as ya
 from src.struct import ForestParams
 
 # prettify plots
+plt.rcParams['font.family'] = 'Times New Roman'
 sns.set_style({"xtick.direction": "in", "ytick.direction": "in"})
 
 b_sns, g_sns, r_sns, p_sns, y_sns, l_sns = sns.color_palette("muted")
@@ -98,7 +99,7 @@ for i in range(len(test_points)):
     cmap = {0: y_sns, 1: b_sns, 2: g_sns, 3: r_sns}
     # plot toy data
     axes[i][-1].scatter(data_train[:, 0], data_train[:, 1], c=list(
-        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.4)
+        map(lambda l: cmap[l], data_train[:, 2])), alpha=0.75)
     # test points
     axes[i][-1].scatter(test_points[i, 0], test_points[i, 1], c=list(
         map(lambda l: cmap[l], forest.predict([test_points[i]])),
@@ -122,7 +123,7 @@ for i in range(len(test_points)):
                          Z,
                          cmap=plt.cm.jet.from_list(
                              'contourf', _colors, 3),
-                         alpha=0.5)
+                         alpha=0.4)
 
 
 fig.tight_layout()

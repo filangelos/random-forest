@@ -92,6 +92,15 @@ def pickle_load__getCaltech(codebook: str,
         pass
 
 
+def getCaltech_classlist(folder_name: str) -> typing.List[str]:
+    # list of folders of images classes
+    class_list = os.listdir(folder_name)
+    # macOS: discart '.DS_Store' file
+    if '.DS_Store' in class_list:
+        class_list.remove('.DS_Store')
+    return class_list
+
+
 def getCaltech_pre(num_features: int = 256,
                    num_descriptors: int = 100000,
                    num_training_samples_per_class: int = 15,
@@ -99,14 +108,10 @@ def getCaltech_pre(num_features: int = 256,
                    random_state: int = None,
                    pickle_dump: bool = True):
     num_descriptors = int(num_descriptors)
-    # TRAINING
     # root folder with images
     folder_name = 'data/Caltech_101/101_ObjectCategories'
-    # list of folders of images classes
-    class_list = os.listdir(folder_name)
-    # macOS: discart '.DS_Store' file
-    if '.DS_Store' in class_list:
-        class_list.remove('.DS_Store')
+    # TRAINING
+    class_list = getCaltech_classlist(folder_name)
     # fix random generator state
     if random_state is not None:
         np.random.seed(random_state)
@@ -139,8 +144,9 @@ def getCaltech_pre(num_features: int = 256,
             kp, des = sift.detectAndCompute(gray, None)
             # store descriptors
             raw_train[c][i] = des
-            for d in des:
-                descriptors_train.append(d)
+            # cache descriptors
+            descriptors_train += list(des)
+            # plot
             if i == 0:
                 # images to plot
                 sift_img = cv2.drawKeypoints(
@@ -179,6 +185,7 @@ def getCaltech_pre(num_features: int = 256,
             kp, des = sift.detectAndCompute(gray, None)
             # store descriptors
             raw_test[c][i] = des
+            # plot
             if i == 0:
                 # images to plot
                 sift_img = cv2.drawKeypoints(
@@ -241,14 +248,14 @@ def getCaltech_plot(class_list: typing.List[str],
                     bbox_inches='tight', pad_inches=0.01)
 
 
-def getCaltech_KMeans(minibatch: bool = False,
-                      savefig_images: bool = False,
-                      num_features: int = 256,
-                      num_descriptors: int = 100000,
-                      num_training_samples_per_class: int = 15,
-                      num_testing_samples_per_class: int = 15,
-                      random_state: int = None,
-                      pickle_dump: bool = True) -> Data:
+def getCaltech_KMeans(minibatch: bool=False,
+                      savefig_images: bool=False,
+                      num_features: int=256,
+                      num_descriptors: int=100000,
+                      num_training_samples_per_class: int=15,
+                      num_testing_samples_per_class: int=15,
+                      random_state: int=None,
+                      pickle_dump: bool=True) -> Data:
     """Caltech 101 training and testing data generator
     using KMeans codebook.
 
@@ -329,18 +336,60 @@ def getCaltech_KMeans(minibatch: bool = False,
     if pickle_dump:
         codebook = 'kmeans' if minibatch else 'minibatch-kmeans'
         pickle.dump(Data(data_train, data_query), open(
-            'tmp/models/caltech_%s_%i.pkl' % (codebook, num_features), 'wb'))
+            'tmp/models/codebooks/caltech_%s_%i.pkl' % (codebook, num_features), 'wb'))
 
     return Data(data_train, data_query)
 
 
-def getCaltech_RandomForest(savefig_images: bool = False,
-                            num_features: int = 10,
-                            num_descriptors: int = 100000,
-                            num_training_samples_per_class: int = 15,
-                            num_testing_samples_per_class: int = 15,
-                            random_state: int = None,
-                            pickle_dump: bool = True) -> Data:
+def getCaltech_images(random_state: int = None,
+                      num_training_samples_per_class: int = 15,
+                      num_testing_samples_per_class: int = 15):
+    # root folder with images
+    folder_name = 'data/Caltech_101/101_ObjectCategories'
+    # TRAINING
+    class_list = getCaltech_classlist(folder_name)
+    # fix random generator state
+    if random_state is not None:
+        np.random.seed(random_state)
+
+    # cache images
+    out = {key: [] for key in ['train', 'test']}
+
+    # iterate over image classes
+    for c in range(len(class_list)):
+        # subfolder pointer
+        sub_folder_name = os.path.join(folder_name, class_list[c])
+        # filter non-images files out
+        img_list = glob.glob(os.path.join(sub_folder_name, '*.jpg'))
+        # shuffle images to break correlation
+        np.random.shuffle(img_list)
+        # training examples
+        img_train = img_list[:num_training_samples_per_class]
+        # testing examples
+        img_test = img_list[num_training_samples_per_class:
+                            num_training_samples_per_class +
+                            num_testing_samples_per_class]
+        # iterate over image samples of a class
+        for i in range(len(img_train)):
+            # fetch image sample
+            out['train'].append(cv2.imread(img_train[i]))
+            out['test'].append(cv2.imread(img_test[i]))
+
+    # convert to NumPy arrays
+    out['train'] = np.array(out['train'])
+    out['test'] = np.array(out['test'])
+
+    # return
+    return out
+
+
+def getCaltech_RandomForest(savefig_images: bool=False,
+                            num_features: int=10,
+                            num_descriptors: int=100000,
+                            num_training_samples_per_class: int=15,
+                            num_testing_samples_per_class: int=15,
+                            random_state: int=None,
+                            pickle_dump: bool=True) -> Data:
     """Caltech 101 training and testing data generator
     using Random Forest Codebook.
 
@@ -407,21 +456,21 @@ def getCaltech_RandomForest(savefig_images: bool = False,
     # cache data to avoid recalculation every time
     if pickle_dump:
         pickle.dump(Data(data_train, data_query), open(
-            'tmp/models/caltech_rf.pkl', 'wb'))
+            'tmp/models/codebooks/caltech_rf.pkl', 'wb'))
 
     return Data(data_train, data_query)
 
 
-def getCaltech(codebook: str = 'kmeans',
-               savefig_images: bool = False,
-               savefig_bars: bool = False,
-               num_features: int = 256,
-               num_descriptors: int = 100000,
-               num_training_samples_per_class: int = 15,
-               num_testing_samples_per_class: int = 15,
-               random_state: int = None,
-               pickle_dump: bool = True,
-               pickle_load: bool = False) -> Data:
+def getCaltech(codebook: str='kmeans',
+               savefig_images: bool=False,
+               savefig_bars: bool=False,
+               num_features: int=256,
+               num_descriptors: int=100000,
+               num_training_samples_per_class: int=15,
+               num_testing_samples_per_class: int=15,
+               random_state: int=None,
+               pickle_dump: bool=True,
+               pickle_load: bool=False) -> Data:
     """Caltech 101 training and testing data generator.
 
     Parameters

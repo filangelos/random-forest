@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -183,3 +184,36 @@ def plot_x_mean_std(x: np.ndarray,
     # show figure
     if show:
         plt.show()
+
+
+def plot_confusion_matrix(cm, savefig,
+                          classes=None,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    sns.set_style({"xtick.direction": "out", "ytick.direction": "out"})
+    if classes is None:
+        classes = list(range(cm.shape[0]))
+    if normalize:
+        cm = cm.astype('float') / (cm.sum(axis=1)[:, np.newaxis] + 1e-6)
+    fig, ax = plt.subplots(figsize=(6.0, 3.0))
+    fmt = 'd' if not normalize else '.2f'
+    sns.heatmap(cm, cmap=cmap,
+                annot=True, fmt=fmt, ax=ax)
+    ax.set_title(title)
+    # tick_marks = np.arange(len(classes))
+    # ax.set_xticks(tick_marks)
+    # ax.set_xticklabels(classes)
+    # ax.set_yticks(tick_marks)
+    # ax.set_yticklabels(classes)
+    ax.tick_params(axis=u'both', which=u'both', length=0)
+
+    ax.set_ylabel('True Label')
+    ax.set_xlabel('Predicted Label')
+    fig.tight_layout()
+    fig.savefig('assets/%s.pdf' % savefig, format='pdf', dpi=300,
+                transparent=False, bbox_inches='tight', pad_inches=0.02)
