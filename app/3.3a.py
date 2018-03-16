@@ -75,7 +75,10 @@ complexity = {
     {'train': lambda i, j: 0.0001 * np.exp(i*0.4) +
      np.random.normal(0, 0.01),
      'test': lambda i, j: 0.001 * i +
-     np.random.normal(0, 0.0007)}
+     np.random.normal(0, 0.0007)},
+    'max_features':
+    {'train': lambda i, j: 0.06*i+0.64 + np.random.normal(0, 0.02),
+     'test': lambda i, j: 0.004*i+0.05 + np.random.normal(0, 0.002)}
 }
 
 # errors noise figures

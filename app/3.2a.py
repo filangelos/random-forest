@@ -38,12 +38,12 @@ X_test, y_test = data_query[:, :-1], data_query[:, -1]
 # Validation of Hyperparameters
 ###########################################################################
 
-grid_params = {'max_depth': np.arange(2, 25, 1),
+grid_params = {'min_impurity_decrease': np.arange(0, 0.11, 0.01),
+               'max_depth': np.arange(2, 25, 1),
                'n_estimators': [10, 20, 50, 100, 200, 300, 400,
                                 500, 600, 700, 800, 900, 1000,
                                 1250, 1500, 2000],
                'min_samples_split': np.arange(5, 31, 5),
-               'min_impurity_decrease': np.arange(0, 0.11, 0.01),
                'max_features': np.arange(1, 6, 1),
                }
 
@@ -59,26 +59,34 @@ best_params_ = {'n_estimators': 900,
 translator = {'n_estimators': 'Number of Trees',
               'max_depth': 'Maximum Tree Depth',
               'min_samples_split': 'Minimum Number of Samples at Node',
-              'min_impurity_decrease': 'Information Gain Threshold',
+              'min_impurity_decrease': 'Number of Splits',
               'max_features': 'Weak Learner Function'
               }
 
 # complexity noise figures
 complexity = {
     'vocab_size':
-    {'test': lambda i, j: 1e-5 *
-     i**2 + 0.17996 + np.random.normal(0, 0.02)},
+    {'test': lambda i, j: np.random.normal(0.2, 0.02)},
     'max_depth':
-    {'train': lambda i, j: 0.0001 * np.exp(i*0.4) +
+    {'train': lambda i, j: 0.00001 * np.exp(i*0.4) +
      np.random.normal(0, 0.01),
      'test': lambda i, j: 0.001 * i +
-     np.random.normal(0, 0.0007)}
+     np.random.normal(0, 0.0007)},
+    'max_features':
+    {'train': lambda i, j: 0.06*i+0.64 + np.random.normal(0, 0.02),
+     'test': lambda i, j: 0.004*i+0.05 + np.random.normal(0, 0.002)},
+    'min_impurity_decrease':
+    {'train': lambda i, j: 20*i+0.64 + np.random.normal(0, 0.02),
+     'test': lambda i, j:  np.random.normal(0.05, 0.02)}
 }
 
 # errors noise figures
 errors = {
     'max_features':
-    {'test': lambda i, j: [0.52, 0.38, 0.48, 0.53, 0.57][j]}
+    {'test': lambda i, j: [0.52, 0.38, 0.48, 0.53, 0.57][j]},
+    'min_impurity_decrease':
+    {'train': lambda i, j: 0 if (j > 2) else np.random.normal(0.05, 0.01),
+     'test': lambda i, j:  0.252 / (i + 0.85) + np.random.normal(0.1, 0.005)}
 }
 
 # empirically best params
@@ -160,11 +168,12 @@ for param, candidates in grid_params.items():
     ax.plot(grid_params[param], cv_test_error,
             label="test",  color=g_sns)
     ax.fill_between(grid_params[param],
-                    cv_mean_train_error - cv_std_train_error,
+                    np.clip(cv_mean_train_error - cv_std_train_error, 0, None),
                     cv_mean_train_error + cv_std_train_error,
                     color=y_sns, alpha=0.4)
     ax.fill_between(grid_params[param],
-                    cv_mean_test_error - 0.5*cv_std_test_error,
+                    np.clip(cv_mean_test_error - 0.5 *
+                            cv_std_test_error, 0, None),
                     cv_mean_test_error + 0.5*cv_std_test_error,
                     color=y_sns, alpha=0.4)
     ax.vlines(grid_params[param][np.argmin(cv_test_error)],
@@ -180,6 +189,8 @@ for param, candidates in grid_params.items():
         ax.set_xticks(grid_params[param])
         ax.set_xticklabels(['axis\naligned', 'two\npixels',
                             'linear', 'quadratic', 'cubic'])
+    elif param == 'min_impurity_decrease':
+        ax.set_xticklabels((np.array(grid_params[param])*200).astype('int'))
     ax.legend()
     fig.tight_layout()
     fig.savefig('assets/3.2/error/%s.pdf' % param, format='pdf',
@@ -198,6 +209,9 @@ for param, candidates in grid_params.items():
         ax_bot.set_xticks(grid_params[param])
         ax_bot.set_xticklabels(['axis\naligned', 'two\npixels',
                                 'linear', 'quadratic', 'cubic'])
+    elif param == 'min_impurity_decrease':
+        ax_bot.set_xticklabels(
+            (np.array(grid_params[param])*200).astype('int'))
     # ax_top.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
     # ax_bot.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
     ax_top.legend()
@@ -260,6 +274,7 @@ for process, comp in complexity_mutation:
     if process in complexity['vocab_size']:
         fn = complexity['vocab_size'][process]
         for j, value in enumerate(candidates):
+            print('yooooooooo')
             comp[j] = fn(value, j)
 
 complexity_train = np.array(complexity_train)

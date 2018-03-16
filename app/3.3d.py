@@ -67,8 +67,6 @@ y_hat = clf.predict(X_test)
 # confusion matrix
 cm = confusion_matrix(y_test, y_hat)
 ya.visualise.plot_confusion_matrix(cm, normalize=True,
-                                   #    classes=ya.data.getCaltech_classlist(
-                                   #    'data/Caltech_101/101_ObjectCategories'),
                                    title='$\\mathtt{Caltech\ 101}$\nRandom Forest Classifier & Codebook',
                                    savefig='3.3/optimal_confusion_matrix', cmap=plt.cm.Reds)
 
